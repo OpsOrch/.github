@@ -21,25 +21,78 @@ OpsOrch is an open, modular incident-operations platform that unifies incidents,
 | _`opsorch-console` (private)_ | Next.js operator interface that surfaces Core data and Copilot suggestions.
 | [`opsorch-adapter-*`](https://github.com/orgs/OpsOrch/repositories) | External provider implementations that follow the same registry contract.
 
-## Architecture Snapshot
-```
-User (Console UI)
-   ↓
-OpsOrch Copilot (LLM runtime)
-   ↓ via MCP tools
-opsorch-mcp (typed tools/resources)
-   ↓ HTTP
-OpsOrch Core (routing, registry, schemas, secrets)
-   ↓
-Adapters (in-process or JSON-RPC plugins)
-   ↓
-Provider APIs / Mock data
+## Architecture
+
+```mermaid
+graph TB
+    subgraph "User Layer"
+        UI["OpsOrch Console<br/>(Next.js UI)"]
+    end
+    
+    subgraph "AI Runtime Layer"
+        Copilot["OpsOrch Copilot<br/>(LLM Planning & Execution)"]
+    end
+    
+    subgraph "Tools Layer"
+        MCP["opsorch-mcp<br/>(MCP Server)<br/>Typed Tools & Resources"]
+    end
+    
+    subgraph "Orchestration Layer"
+        Core["OpsOrch Core<br/>(Go Service)<br/>Routing • Registry • Schemas • Secrets"]
+    end
+    
+    subgraph "Provider Adapters"
+        InProcess["In-Process Providers<br/>(Go Registry)"]
+        Plugins["JSON-RPC Plugins<br/>(stdio communication)"]
+    end
+    
+    subgraph "External Systems"
+        PD["PagerDuty"]
+        Jira["Jira"]
+        Prom["Prometheus"]
+        ES["Elasticsearch"]
+        Mock["Mock Providers<br/>(Demo Data)"]
+        Other["Other Providers..."]
+    end
+    
+    UI -->|HTTP| Copilot
+    UI -->|HTTP| Core
+    Copilot -->|MCP Protocol| MCP
+    MCP -->|HTTP REST| Core
+    Core -->|Registry Lookup| InProcess
+    Core -->|JSON-RPC stdin/stdout| Plugins
+    InProcess --> PD
+    InProcess --> Jira
+    InProcess --> Mock
+    Plugins --> Prom
+    Plugins --> ES
+    Plugins --> Other
+    
+    style UI fill:#e1f5ff
+    style Copilot fill:#fff4e1
+    style MCP fill:#f0e1ff
+    style Core fill:#e1ffe1
+    style InProcess fill:#ffe1e1
+    style Plugins fill:#ffe1e1
 ```
 
-- **Core contracts** live under `opsorch-core/schema` and `opsorch-core/api`.
-- **Registry selection** is driven by env vars: `OPSORCH_<CAP>_PROVIDER` or `OPSORCH_<CAP>_PLUGIN` with `OPSORCH_<CAP>_CONFIG` JSON.
-- **Plugin RPC** uses JSON over stdin/stdout, keeping traffic on-box. `opsorch-mock-adapters` ship ready-made binaries under `bin/`.
-- **Docs/diagrams**: `OPSORCH_MASTER.md` (in repo root) and `opsorch-architecture.drawio` capture deeper context.
+### Key Components
+
+- **Console**: Operator-focused UI for browsing incidents, logs, metrics, services, tickets, and AI chat
+- **Copilot**: AI runtime that uses LLMs to plan and execute MCP tool calls for operational queries
+- **MCP Server**: Exposes Core APIs as typed MCP tools/resources for agent runtimes
+- **Core**: Stateless Go service providing unified APIs, routing, schema boundaries, and secret management
+- **Adapters**: Provider-specific implementations loaded in-process (via registry) or out-of-process (via JSON-RPC plugins)
+
+### Design Principles
+
+- **Core contracts** live under `opsorch-core/schema` and `opsorch-core/api`
+- **Registry selection** is driven by env vars: `OPSORCH_<CAP>_PROVIDER` or `OPSORCH_<CAP>_PLUGIN` with `OPSORCH_<CAP>_CONFIG` JSON
+- **Plugin RPC** uses JSON over stdin/stdout, keeping traffic on-box. `opsorch-mock-adapters` ship ready-made binaries under `bin/`
+- **Secrets** are encrypted at rest and only decrypted when invoking providers; never logged or returned
+- **No data replication**: Core holds only encrypted integration configs and optional audit logs; operational data stays in source systems
+
+For deeper context, see `OPSORCH_MASTER.md` (in repo root) and `opsorch-architecture.drawio`.
 
 ## Run the Stack Locally
 1. **Core with mock providers**
