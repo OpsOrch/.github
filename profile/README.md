@@ -10,16 +10,23 @@ OpsOrch is an open, modular incident-operations platform that unifies incidents,
 - **Security-first**: secrets stay encrypted, and Core remains stateless aside from integration metadata and optional audit logs.
 
 ## Repository Map
+
+### Core Infrastructure
 | Repo | Description |
 | --- | --- |
-| [`opsorch-core`](https://github.com/OpsOrch/opsorch-core) | Go orchestration service exposing REST APIs, schema boundaries, capability registry, and plugin loader. Holds no operational data.
-| [`opsorch-mock-adapters`](https://github.com/OpsOrch/opsorch-mock-adapters) | Go adapters + plugins that return seeded data for every capability. Perfect for demos and local dev.
-| [`opsorch-adapter`](https://github.com/OpsOrch/opsorch-adapter) | Starter template for building real provider adapters/plugins.
-| [`opsorch-pagerduty-adapter`](https://github.com/OpsOrch/opsorch-pagerduty-adapter) | Reference adapter for PagerDuty incident workflows.
-| [`opsorch-mcp`](https://github.com/OpsOrch/opsorch-mcp) | TypeScript MCP server that wraps Core HTTP APIs as typed tools/resources for agent runtimes.
-| _`opsorch-copilot` (private)_ | Planning/runtime loop that calls MCP tools with LLMs (mock or real OpenAI-compatible backends).
-| _`opsorch-console` (private)_ | Next.js operator interface that surfaces Core data and Copilot suggestions.
-| [`opsorch-adapter-*`](https://github.com/orgs/OpsOrch/repositories) | External provider implementations that follow the same registry contract.
+| [`opsorch-core`](https://github.com/OpsOrch/opsorch-core) | Stateless Go orchestration service providing unified REST APIs, capability registry, schema boundaries, secret management, and plugin loader. Zero operational data storage. |
+| [`opsorch-mcp`](https://github.com/OpsOrch/opsorch-mcp) | TypeScript MCP server exposing Core APIs as typed tools/resources for LLM agents (Claude, ChatGPT, etc). Supports both stdio and HTTP transports. |
+| _`opsorch-copilot` (private)_ | AI runtime with planning loops that execute MCP tool calls via LLMs. Supports mock and OpenAI-compatible backends. |
+| _`opsorch-console` (private)_ | Next.js operator UI for browsing incidents/logs/metrics/tickets, executing searches, and collaborating with AI responses. |
+
+### Provider Adapters
+| Repo | Capability | Description |
+| --- | --- | --- |
+| [`opsorch-pagerduty-adapter`](https://github.com/OpsOrch/opsorch-pagerduty-adapter) | Incident, Service | PagerDuty integration for incident management and service discovery with timeline support. |
+| [`opsorch-jira-adapter`](https://github.com/OpsOrch/opsorch-jira-adapter) | Ticket | Jira integration for ticket CRUD operations with support for labels, components, and custom fields. |
+| [`opsorch-prometheus-adapter`](https://github.com/OpsOrch/opsorch-prometheus-adapter) | Metric | Prometheus integration for metric querying and discovery with PromQL support. |
+| [`opsorch-mock-adapters`](https://github.com/OpsOrch/opsorch-mock-adapters) | All | Demo adapters returning seeded data for all capabilities. Ideal for development and demos. |
+| [`opsorch-adapter`](https://github.com/OpsOrch/opsorch-adapter) | Template | Starter template for building new provider adapters with examples and best practices. |
 
 ## Architecture
 
@@ -127,12 +134,28 @@ curl -s http://localhost:7070/mcp \
 ```
 
 ## Build New Adapters
-1. Copy [`opsorch-adapter`](https://github.com/OpsOrch/opsorch-adapter) as `opsroch-<provider>-adapter` (naming convention: `opsroch-*-adapter`).
-2. Implement the capability interfaces you need (incident, log, metric, ticket, messaging, service, secret).
-3. Export `New(config map[string]any)` and register: `incident.RegisterProvider("<name>", New)`.
-4. Normalize provider payloads to current schemas; stash vendor-specific extras under `metadata`.
-5. Add unit tests plus optional plugin entrypoints (`cmd/<cap>plugin`).
-6. Publish binaries or import the module into your custom core build.
+
+### Quick Start
+1. **Fork the template**: Copy [`opsorch-adapter`](https://github.com/OpsOrch/opsorch-adapter) as `opsorch-<provider>-adapter`
+2. **Choose capabilities**: Implement interfaces you need:
+   - `incident.Provider` - Create/query/update incidents, manage timelines
+   - `log.Provider` - Query logs with structured expressions
+   - `metric.Provider` - Query metrics, discover available metrics
+   - `ticket.Provider` - CRUD operations for tickets
+   - `service.Provider` - Service discovery and metadata
+   - `messaging.Provider` - Send messages to channels/users
+   - `secret.Provider` - Encrypted secret storage
+3. **Register provider**: Export `New(config map[string]any)` and call `<capability>.RegisterProvider("<name>", New)`
+4. **Normalize data**: Map provider responses to OpsOrch schemas; use `metadata` for provider-specific fields
+5. **Test thoroughly**: Add unit tests and integration tests (see existing adapters for examples)
+6. **Deploy**: Build as plugin binary (`make plugin`) or import directly into custom Core build
+
+### Examples
+- **PagerDuty**: Incident + Service providers with QueryScope support
+- **Jira**: Ticket provider with custom fields and JQL filtering  
+- **Prometheus**: Metric provider with PromQL and structured queries
+
+See individual adapter READMEs for detailed implementation patterns.
 
 ## Safety & Operations
 - Always pass `service`/`team`/`environment` scope fields to narrow expensive queries.
