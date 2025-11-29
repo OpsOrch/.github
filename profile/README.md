@@ -25,6 +25,7 @@ OpsOrch is an open, modular incident-operations platform that unifies incidents,
 | [`opsorch-pagerduty-adapter`](https://github.com/OpsOrch/opsorch-pagerduty-adapter) | Incident, Service | PagerDuty integration for incident management and service discovery with timeline support. |
 | [`opsorch-jira-adapter`](https://github.com/OpsOrch/opsorch-jira-adapter) | Ticket | Jira integration for ticket CRUD operations with support for labels, components, and custom fields. |
 | [`opsorch-prometheus-adapter`](https://github.com/OpsOrch/opsorch-prometheus-adapter) | Metric | Prometheus integration for metric querying and discovery with PromQL support. |
+| [`opsorch-elastic-adapter`](https://github.com/OpsOrch/opsorch-elastic-adapter) | Log | Elasticsearch integration for log querying with full-text search and structured filtering. |
 | [`opsorch-mock-adapters`](https://github.com/OpsOrch/opsorch-mock-adapters) | All | Demo adapters returning seeded data for all capabilities. Ideal for development and demos. |
 | [`opsorch-adapter`](https://github.com/OpsOrch/opsorch-adapter) | Template | Starter template for building new provider adapters with examples and best practices. |
 
@@ -154,6 +155,7 @@ curl -s http://localhost:7070/mcp \
 - **PagerDuty**: Incident + Service providers with QueryScope support
 - **Jira**: Ticket provider with custom fields and JQL filtering  
 - **Prometheus**: Metric provider with PromQL and structured queries
+- **Elasticsearch**: Log provider with full-text search and structured filtering
 
 See individual adapter READMEs for detailed implementation patterns.
 
