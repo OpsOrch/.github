@@ -26,6 +26,7 @@ OpsOrch is an open, modular incident-operations platform that unifies incidents,
 | [`opsorch-jira-adapter`](https://github.com/OpsOrch/opsorch-jira-adapter) | Ticket | Jira integration for ticket CRUD operations with support for labels, components, and custom fields. |
 | [`opsorch-prometheus-adapter`](https://github.com/OpsOrch/opsorch-prometheus-adapter) | Metric | Prometheus integration for metric querying and discovery with PromQL support. |
 | [`opsorch-elastic-adapter`](https://github.com/OpsOrch/opsorch-elastic-adapter) | Log | Elasticsearch integration for log querying with full-text search and structured filtering. |
+| [`opsorch-slack-adapter`](https://github.com/OpsOrch/opsorch-slack-adapter) | Messaging | Slack integration for sending rich messages to channels using Block Kit with Markdown support. |
 | [`opsorch-mock-adapters`](https://github.com/OpsOrch/opsorch-mock-adapters) | All | Demo adapters returning seeded data for all capabilities. Ideal for development and demos. |
 | [`opsorch-adapter`](https://github.com/OpsOrch/opsorch-adapter) | Template | Starter template for building new provider adapters with examples and best practices. |
 
@@ -59,8 +60,9 @@ graph TB
         Jira["Jira"]
         Prom["Prometheus"]
         ES["Elasticsearch"]
+        Slack["Slack"]
         Mock["Mock Providers<br/>(Demo Data)"]
-        Other["Other Providers..."]
+        Secret["Secret Store<br/>(In-Memory)"]
     end
     
     UI -->|HTTP| Copilot
@@ -69,12 +71,13 @@ graph TB
     MCP -->|HTTP REST| Core
     Core -->|Registry Lookup| InProcess
     Core -->|JSON-RPC stdin/stdout| Plugins
-    InProcess --> PD
-    InProcess --> Jira
     InProcess --> Mock
+    InProcess --> Secret
+    Plugins --> PD
+    Plugins --> Jira
     Plugins --> Prom
     Plugins --> ES
-    Plugins --> Other
+    Plugins --> Slack
     
     style UI fill:#e1f5ff
     style Copilot fill:#fff4e1
@@ -158,6 +161,83 @@ curl -s http://localhost:7070/mcp \
 - **Elasticsearch**: Log provider with full-text search and structured filtering
 
 See individual adapter READMEs for detailed implementation patterns.
+
+## Build Custom Docker Images
+
+Each adapter repository publishes pre-built plugin binaries as GitHub release assets for multiple platforms (linux-amd64, linux-arm64, darwin-amd64, darwin-arm64). You can compose custom Docker images by downloading specific adapter versions without building from source.
+
+### Quick Example
+
+Create a custom OpsOrch image with Jira, PagerDuty, and Slack adapters:
+
+```dockerfile
+FROM ghcr.io/opsorch/opsorch-core:latest
+WORKDIR /opt/opsorch
+
+# Download specific adapter versions
+ADD https://github.com/opsorch/opsorch-jira-adapter/releases/download/v0.2.1/ticketplugin-linux-amd64 ./plugins/ticketplugin
+ADD https://github.com/opsorch/opsorch-pagerduty-adapter/releases/download/v0.1.5/incidentplugin-linux-amd64 ./plugins/incidentplugin
+ADD https://github.com/opsorch/opsorch-slack-adapter/releases/download/v0.3.0/messagingplugin-linux-amd64 ./plugins/messagingplugin
+
+RUN chmod +x ./plugins/*
+
+ENV OPSORCH_TICKET_PLUGIN=/opt/opsorch/plugins/ticketplugin \
+    OPSORCH_INCIDENT_PLUGIN=/opt/opsorch/plugins/incidentplugin \
+    OPSORCH_MESSAGING_PLUGIN=/opt/opsorch/plugins/messagingplugin \
+    OPSORCH_BEARER_TOKEN=demo
+```
+
+Build and run:
+```bash
+docker build -t my-opsorch:latest .
+docker run --rm -p 8080:8080 \
+  -e OPSORCH_TICKET_CONFIG='{"apiToken":"...","projectKey":"PROJ"}' \
+  -e OPSORCH_INCIDENT_CONFIG='{"apiToken":"...","serviceID":"..."}' \
+  -e OPSORCH_MESSAGING_CONFIG='{"token":"xoxb-..."}' \
+  my-opsorch:latest
+```
+
+### Available Adapters
+
+| Adapter | Capability | Plugin Name | Latest Release |
+|---------|------------|-------------|----------------|
+| [opsorch-jira-adapter](https://github.com/opsorch/opsorch-jira-adapter) | Ticket | `ticketplugin` | [Releases](https://github.com/opsorch/opsorch-jira-adapter/releases) |
+| [opsorch-pagerduty-adapter](https://github.com/opsorch/opsorch-pagerduty-adapter) | Incident, Service | `incidentplugin`, `serviceplugin` | [Releases](https://github.com/opsorch/opsorch-pagerduty-adapter/releases) |
+| [opsorch-prometheus-adapter](https://github.com/opsorch/opsorch-prometheus-adapter) | Metric | `metricplugin` | [Releases](https://github.com/opsorch/opsorch-prometheus-adapter/releases) |
+| [opsorch-slack-adapter](https://github.com/opsorch/opsorch-slack-adapter) | Messaging | `messagingplugin` | [Releases](https://github.com/opsorch/opsorch-slack-adapter/releases) |
+| [opsorch-elastic-adapter](https://github.com/opsorch/opsorch-elastic-adapter) | Log | `logplugin` | [Releases](https://github.com/opsorch/opsorch-elastic-adapter/releases) |
+| [opsorch-mock-adapters](https://github.com/opsorch/opsorch-mock-adapters) | All (Demo) | `incidentplugin`, `logplugin`, etc. | [Docker Image](https://github.com/opsorch/opsorch-mock-adapters/pkgs/container/opsorch-mock-adapters) |
+
+### Advanced Patterns
+
+**Multi-arch support:**
+```dockerfile
+ARG TARGETARCH
+FROM ghcr.io/opsorch/opsorch-core:latest
+WORKDIR /opt/opsorch
+
+ADD https://github.com/opsorch/opsorch-jira-adapter/releases/download/v0.2.1/ticketplugin-linux-${TARGETARCH} ./plugins/ticketplugin
+RUN chmod +x ./plugins/*
+```
+
+**Version pinning with ARGs:**
+```dockerfile
+ARG JIRA_VERSION=v0.2.1
+ARG PAGERDUTY_VERSION=v0.1.5
+
+FROM ghcr.io/opsorch/opsorch-core:latest
+WORKDIR /opt/opsorch
+
+ADD https://github.com/opsorch/opsorch-jira-adapter/releases/download/${JIRA_VERSION}/ticketplugin-linux-amd64 ./plugins/ticketplugin
+ADD https://github.com/opsorch/opsorch-pagerduty-adapter/releases/download/${PAGERDUTY_VERSION}/incidentplugin-linux-amd64 ./plugins/incidentplugin
+RUN chmod +x ./plugins/*
+```
+
+**Using the demo image:**
+```bash
+# opsorch-mock-adapters publishes a complete demo image with all mock plugins
+docker run --rm -p 8080:8080 ghcr.io/opsorch/opsorch-mock-adapters:latest
+```
 
 ## Safety & Operations
 - Always pass `service`/`team`/`environment` scope fields to narrow expensive queries.
