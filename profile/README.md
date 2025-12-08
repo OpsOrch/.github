@@ -22,6 +22,7 @@ OpsOrch is an open, modular incident-operations platform that unifies incidents,
 ### Provider Adapters
 | Repo | Capability | Description |
 | --- | --- | --- |
+| [`opsorch-datadog-adapter`](https://github.com/OpsOrch/opsorch-datadog-adapter) | Metric, Log, Alert, Incident, Service | Datadog integration using official Go SDK v2 for metrics, logs, monitors, incidents, and service catalog. |
 | [`opsorch-pagerduty-adapter`](https://github.com/OpsOrch/opsorch-pagerduty-adapter) | Incident, Service | PagerDuty integration for incident management and service discovery with timeline support. |
 | [`opsorch-jira-adapter`](https://github.com/OpsOrch/opsorch-jira-adapter) | Ticket | Jira integration for ticket CRUD operations with support for labels, components, and custom fields. |
 | [`opsorch-prometheus-adapter`](https://github.com/OpsOrch/opsorch-prometheus-adapter) | Metric | Prometheus integration for metric querying and discovery with PromQL support. |
@@ -201,6 +202,7 @@ docker run --rm -p 8080:8080 \
 
 | Adapter | Capability | Plugin Name | Latest Release |
 |---------|------------|-------------|----------------|
+| [opsorch-datadog-adapter](https://github.com/opsorch/opsorch-datadog-adapter) | Metric, Log, Alert, Incident, Service | `metricplugin`, `logplugin`, `alertplugin`, `incidentplugin`, `serviceplugin` | [Releases](https://github.com/opsorch/opsorch-datadog-adapter/releases) |
 | [opsorch-jira-adapter](https://github.com/opsorch/opsorch-jira-adapter) | Ticket | `ticketplugin` | [Releases](https://github.com/opsorch/opsorch-jira-adapter/releases) |
 | [opsorch-pagerduty-adapter](https://github.com/opsorch/opsorch-pagerduty-adapter) | Incident, Service | `incidentplugin`, `serviceplugin` | [Releases](https://github.com/opsorch/opsorch-pagerduty-adapter/releases) |
 | [opsorch-prometheus-adapter](https://github.com/opsorch/opsorch-prometheus-adapter) | Metric | `metricplugin` | [Releases](https://github.com/opsorch/opsorch-prometheus-adapter/releases) |
