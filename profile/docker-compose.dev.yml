@@ -1,0 +1,151 @@
+# OpsOrch Development Stack
+# This Docker Compose file sets up a development environment with:
+# - OpsOrch Mock Adapters (includes Core + all mock providers)
+# - OpsOrch MCP server
+# - OpsOrch Console (both OSS and Enterprise editions)
+# - Placeholder for OpsOrch Copilot (private, when available)
+#
+# Usage:
+#   curl -O https://raw.githubusercontent.com/OpsOrch/.github/main/profile/docker-compose.dev.yml
+#   docker compose -f docker-compose.dev.yml up -d
+#   
+# Access:
+#   - Console OSS: http://localhost:3000
+#   - Console Enterprise: http://localhost:3001
+#   - Core API: http://localhost:8080
+#   - MCP Server: http://localhost:7070/mcp
+#   - Copilot API: http://localhost:6060 (when available)
+
+version: '3.8'
+
+services:
+  # OpsOrch Mock Adapters (includes Core + all mock providers)
+  opsorch-mock-adapters:
+    image: ghcr.io/opsorch/opsorch-mock-adapters:latest
+    container_name: opsorch-mock-adapters-dev
+    ports:
+      - "8080:8080"
+    environment:
+      - OPSORCH_BEARER_TOKEN=demo
+      - OPSORCH_LOG_LEVEL=debug
+      - OPSORCH_PORT=8080
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - opsorch-dev
+
+  # OpsOrch MCP Server
+  opsorch-mcp:
+    image: ghcr.io/opsorch/opsorch-mcp:latest
+    container_name: opsorch-mcp-dev
+    ports:
+      - "7070:7070"
+    environment:
+      - OPSORCH_CORE_URL=http://opsorch-mock-adapters:8080
+      - OPSORCH_CORE_TOKEN=demo
+      - OPSORCH_CORE_TIMEOUT_MS=15000
+      - MCP_HTTP_PORT=7070
+      - OPSORCH_LOG_LEVEL=debug
+      - MCP_HTTP_ALLOW_ORIGINS=http://localhost:3000,http://localhost:3001,http://opsorch-console-oss:3000,http://opsorch-console-enterprise:3000
+      - MCP_HTTP_ALLOW_HOSTS=localhost,opsorch-console-oss,opsorch-console-enterprise
+    depends_on:
+      opsorch-mock-adapters:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7070/mcp", "-H", "Content-Type: application/json", "-d", "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - opsorch-dev
+
+  # OpsOrch Console OSS Edition
+  opsorch-console-oss:
+    image: ghcr.io/opsorch/opsorch-console:latest-oss
+    container_name: opsorch-console-oss-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_OPSORCH_CORE_URL=http://localhost:8080
+      - NEXT_PUBLIC_OPSORCH_EDITION=oss
+    depends_on:
+      opsorch-mock-adapters:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - opsorch-dev
+
+  # OpsOrch Console Enterprise Edition
+  opsorch-console-enterprise:
+    image: ghcr.io/opsorch/opsorch-console:latest-enterprise
+    container_name: opsorch-console-enterprise-dev
+    ports:
+      - "3001:3000"
+    environment:
+      - NEXT_PUBLIC_OPSORCH_CORE_URL=http://localhost:8080
+      - NEXT_PUBLIC_OPSORCH_EDITION=enterprise
+      # - NEXT_PUBLIC_COPILOT_URL=http://localhost:6060  # Uncomment when Copilot is running
+    depends_on:
+      opsorch-mock-adapters:
+        condition: service_healthy
+      # Uncomment when Copilot is available:
+      # opsorch-copilot:
+      #   condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - opsorch-dev
+
+  # OpsOrch Copilot (private - uncomment when available)
+  # opsorch-copilot:
+  #   image: ghcr.io/opsorch/opsorch-copilot:latest
+  #   container_name: opsorch-copilot-dev
+  #   ports:
+  #     - "6060:6060"
+  #   environment:
+  #     - OPSORCH_CORE_URL=http://opsorch-mock-adapters:8080
+  #     - OPSORCH_CORE_TOKEN=demo
+  #     - MCP_SERVER_URL=http://opsorch-mcp:7070/mcp
+  #     - COPILOT_LOG_LEVEL=debug
+  #     # Add LLM provider configuration here
+  #   depends_on:
+  #     opsorch-mock-adapters:
+  #       condition: service_healthy
+  #     opsorch-mcp:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:6060/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 25s
+  #   restart: unless-stopped
+  #   networks:
+  #     - opsorch-dev
+
+networks:
+  opsorch-dev:
+    driver: bridge
+    name: opsorch-dev-network
+
+volumes:
+  opsorch-dev-data:
+    driver: local

@@ -1,253 +1,194 @@
 # OpsOrch
 
-OpsOrch is an open, modular incident-operations platform that unifies incidents, logs, metrics, tickets, messaging, and services behind one orchestration layer. The project is split into focused repos so teams can mix and match pieces—from the Go core to MCP tools, Copilot runtime, console UI, and provider adapters—while keeping proprietary data in existing systems. Learn more at [opsorch.com](https://www.opsorch.com/).
+OpsOrch is an open, modular incident-operations platform that keeps operational data (incidents, logs, metrics, tickets, messaging, services, secrets) in the systems you already run and orchestrates them through a single API + AI workflow. Every repo in this org focuses on one layer of that stack so you can import just the pieces you need.
 
-## Why OpsOrch
-- **Single API surface** for operational data across vendors without replicating records.
-- **Adapter model** keeps provider logic decoupled, supporting in-process and plugin execution paths.
-- **AI-native workflows**: the MCP server exposes typed tools and the Copilot runtime plans/tool-calls answers with citations.
-- **Operator console**: a Next.js UI to browse incidents/logs/metrics/tickets/services and collaborate with Copilot outputs.
-- **Security-first**: secrets stay encrypted, and Core remains stateless aside from integration metadata and optional audit logs.
+## Platform at a Glance
 
-## Repository Map
-
-### Core Infrastructure
-| Repo | Description |
-| --- | --- |
-| [`opsorch-core`](https://github.com/OpsOrch/opsorch-core) | Stateless Go orchestration service providing unified REST APIs, capability registry, schema boundaries, secret management, and plugin loader. Zero operational data storage. |
-| [`opsorch-mcp`](https://github.com/OpsOrch/opsorch-mcp) | TypeScript MCP server exposing Core APIs as typed tools/resources for LLM agents (Claude, ChatGPT, etc). Supports both stdio and HTTP transports. |
-| _`opsorch-copilot` (private)_ | AI runtime with planning loops that execute MCP tool calls via LLMs. Supports mock and OpenAI-compatible backends. |
-| _`opsorch-console` (private)_ | Next.js operator UI for browsing incidents/logs/metrics/tickets, executing searches, and collaborating with AI responses. |
-
-### Provider Adapters
-| Repo | Capability | Description |
+### Runtime + Experience Repos
+| Repo | What it does | Highlights |
 | --- | --- | --- |
-| [`opsorch-datadog-adapter`](https://github.com/OpsOrch/opsorch-datadog-adapter) | Metric, Log, Alert, Incident, Service | Datadog integration using official Go SDK v2 for metrics, logs, monitors, incidents, and service catalog. |
-| [`opsorch-pagerduty-adapter`](https://github.com/OpsOrch/opsorch-pagerduty-adapter) | Incident, Service | PagerDuty integration for incident management and service discovery with timeline support. |
-| [`opsorch-jira-adapter`](https://github.com/OpsOrch/opsorch-jira-adapter) | Ticket | Jira integration for ticket CRUD operations with support for labels, components, and custom fields. |
-| [`opsorch-prometheus-adapter`](https://github.com/OpsOrch/opsorch-prometheus-adapter) | Metric | Prometheus integration for metric querying and discovery with PromQL support. |
-| [`opsorch-elastic-adapter`](https://github.com/OpsOrch/opsorch-elastic-adapter) | Log | Elasticsearch integration for log querying with full-text search and structured filtering. |
-| [`opsorch-slack-adapter`](https://github.com/OpsOrch/opsorch-slack-adapter) | Messaging | Slack integration for sending rich messages to channels using Block Kit with Markdown support. |
-| [`opsorch-mock-adapters`](https://github.com/OpsOrch/opsorch-mock-adapters) | All | Demo adapters returning seeded data for all capabilities. Ideal for development and demos. |
-| [`opsorch-adapter`](https://github.com/OpsOrch/opsorch-adapter) | Template | Starter template for building new provider adapters with examples and best practices. |
+| [`opsorch-core`](https://github.com/OpsOrch/opsorch-core) | Stateless Go orchestration service | REST APIs for every capability, registry + schema boundaries, secret backends, JSON-RPC plugin loader |
+| [`opsorch-mcp`](https://github.com/OpsOrch/opsorch-mcp) | MCP server that wraps Core as typed tools/resources | HTTP + stdio transports, resources for docs, auth via bearer tokens, built with TypeScript |
+| _`opsorch-copilot` (private)_ | AI runtime that plans + executes MCP tool calls | Capability-aware handler registry, multi-step planning, OpenAI/Mock backends, HTTP chat API |
+| [`opsorch-console`](https://github.com/OpsOrch/opsorch-console) | Open-source Next.js operator UI | Incidents/logs/metrics/tickets/services views, alert surface, Copilot chat, OSS + Enterprise editions |
+| _`opsorch-com` (private)_ | Marketing/docs site | Next.js 14 app powering opsorch.com with docs + launch content |
+
+### Adapter + Integration Repos
+| Repo | Capabilities | Notes |
+| --- | --- | --- |
+| [`opsorch-adapter`](https://github.com/OpsOrch/opsorch-adapter) | Template | Starter repo showing provider + plugin patterns |
+| [`opsorch-mock-adapters`](https://github.com/OpsOrch/opsorch-mock-adapters) | All (demo) | Ships seeded data + demo binaries used in Docker examples |
+| [`opsorch-datadog-adapter`](https://github.com/OpsOrch/opsorch-datadog-adapter) | Metric, Log, Alert, Incident, Service | Uses official Datadog Go SDKs |
+| [`opsorch-pagerduty-adapter`](https://github.com/OpsOrch/opsorch-pagerduty-adapter) | Incident, Service | PagerDuty incidents/timelines/services |
+| [`opsorch-jira-adapter`](https://github.com/OpsOrch/opsorch-jira-adapter) | Ticket | Jira CRUD + advanced field handling |
+| [`opsorch-prometheus-adapter`](https://github.com/OpsOrch/opsorch-prometheus-adapter) | Metric | PromQL query + discovery |
+| [`opsorch-elastic-adapter`](https://github.com/OpsOrch/opsorch-elastic-adapter) | Log | Elasticsearch query integration |
+| [`opsorch-slack-adapter`](https://github.com/OpsOrch/opsorch-slack-adapter) | Messaging | Slack channel + DM messaging w/ Block Kit |
+
+### Shared References
+- `.github/profile/docker-compose*.yml`: reproducible local stacks (quick demo, dev overrides, prod baseline)
+- [DOCKER_COMPOSE.md](DOCKER_COMPOSE.md): detailed documentation for Docker Compose configurations
 
 ## Architecture
-
 ```mermaid
 graph TB
-    subgraph "User Layer"
-        UI["OpsOrch Console<br/>(Next.js UI)"]
-    end
-    
-    subgraph "AI Runtime Layer"
-        Copilot["OpsOrch Copilot<br/>(LLM Planning & Execution)"]
+    subgraph "Experience"
+        Console["OpsOrch Console\n(Next.js UI)"]
+        Copilot["OpsOrch Copilot\n(LLM planning runtime)"]
     end
     
     subgraph "Tools Layer"
-        MCP["opsorch-mcp<br/>(MCP Server)<br/>Typed Tools & Resources"]
+        MCP["opsorch-mcp\n(MCP server)\nTyped tools/resources"]
     end
     
-    subgraph "Orchestration Layer"
-        Core["OpsOrch Core<br/>(Go Service)<br/>Routing • Registry • Schemas • Secrets"]
+    subgraph "Orchestration"
+        Core["OpsOrch Core\n(Go service)\nRouting • Schemas • Secrets"]
     end
     
-    subgraph "Provider Adapters"
-        InProcess["In-Process Providers<br/>(Go Registry)"]
-        Plugins["JSON-RPC Plugins<br/>(stdio communication)"]
+    subgraph "Adapters"
+        InProc["In-process providers\n(Go registry)"]
+        Plugins["JSON-RPC plugins\n(stdio)"]
     end
     
     subgraph "External Systems"
-        PD["PagerDuty"]
-        Jira["Jira"]
-        Prom["Prometheus"]
-        ES["Elasticsearch"]
-        Slack["Slack"]
-        Mock["Mock Providers<br/>(Demo Data)"]
-        Secret["Secret Store<br/>(In-Memory)"]
+        PD[PagerDuty]
+        Jira[Jira]
+        DD[Datadog]
+        Prom[Prometheus]
+        ES[Elasticsearch]
+        Slack[Slack]
+        Secret[Secret Store]
+        Mock[Mock Data]
     end
     
-    UI -->|HTTP| Copilot
-    UI -->|HTTP| Core
+    Console -.Enterprise optional.-> Copilot
+    Console -->|HTTP all editions| Core
     Copilot -->|MCP Protocol| MCP
     MCP -->|HTTP REST| Core
-    Core -->|Registry Lookup| InProcess
+    Core -->|Registry lookup| InProc
     Core -->|JSON-RPC stdin/stdout| Plugins
-    InProcess --> Mock
-    InProcess --> Secret
+    InProc --> Mock
+    InProc --> Secret
     Plugins --> PD
     Plugins --> Jira
+    Plugins --> DD
     Plugins --> Prom
     Plugins --> ES
     Plugins --> Slack
-    
-    style UI fill:#e1f5ff
-    style Copilot fill:#fff4e1
-    style MCP fill:#f0e1ff
-    style Core fill:#e1ffe1
-    style InProcess fill:#ffe1e1
-    style Plugins fill:#ffe1e1
 ```
 
-### Key Components
-
-- **Console**: Operator-focused UI for browsing incidents, logs, metrics, services, tickets, and AI chat
-- **Copilot**: AI runtime that uses LLMs to plan and execute MCP tool calls for operational queries
-- **MCP Server**: Exposes Core APIs as typed MCP tools/resources for agent runtimes
-- **Core**: Stateless Go service providing unified APIs, routing, schema boundaries, and secret management
-- **Adapters**: Provider-specific implementations loaded in-process (via registry) or out-of-process (via JSON-RPC plugins)
-
 ### Design Principles
-
-- **Core contracts** live under `opsorch-core/schema` and `opsorch-core/api`
-- **Registry selection** is driven by env vars: `OPSORCH_<CAP>_PROVIDER` or `OPSORCH_<CAP>_PLUGIN` with `OPSORCH_<CAP>_CONFIG` JSON
-- **Plugin RPC** uses JSON over stdin/stdout, keeping traffic on-box. `opsorch-mock-adapters` ship ready-made binaries under `bin/`
-- **Secrets** are encrypted at rest and only decrypted when invoking providers; never logged or returned
-- **No data replication**: Core holds only encrypted integration configs and optional audit logs; operational data stays in source systems
-
-For deeper context, see `OPSORCH_MASTER.md` (in repo root) and `opsorch-architecture.drawio`.
+- **Single API surface:** incidents, alerts, timelines, logs, metrics, tickets, messaging, services, secrets
+- **Config-driven routing:** `OPSORCH_<CAP>_PROVIDER`, `OPSORCH_<CAP>_PLUGIN`, and `OPSORCH_<CAP>_CONFIG` select providers per capability
+- **No operational data storage:** Core keeps encrypted configs + optional audit logs; data stays in source tools
+- **Security-first:** pluggable secret backends (Vault/KMS/local AES-GCM), env-scoped queries, audit hooks
+- **AI-native:** MCP provides typed tools; Copilot plans tool calls, tracks evidence, and surfaces deep links back to Console. OSS Console connects only to Core; Enterprise wiring adds optional Copilot chat.
 
 ## Run the Stack Locally
-1. **Core with mock providers**
+
+### Docker Compose (fastest path)
+A ready-to-run stack lives at `.github/profile/docker-compose.yml` and includes the mock adapters (Core + seeded data), MCP, and the Console.
+
+```bash
+curl -O https://raw.githubusercontent.com/OpsOrch/.github/main/profile/docker-compose.yml
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose up -d
+
+open http://localhost:3000     # Console
+curl http://localhost:8080/health
+curl http://localhost:7070/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+Variants:
+- `docker-compose.dev.yml` – mounts local source for live dev against the containers
+- `docker-compose.prod.yml` – opinionated production wiring (TLS, secrets, logging)
+
+### Manual Dev Workflow
+1. **Core + mock plugins**
    ```bash
    cd opsorch-core
    OPSORCH_INCIDENT_PLUGIN=./plugins/incidentmock \
    OPSORCH_LOG_PLUGIN=./plugins/logmock \
+   OPSORCH_METRIC_PLUGIN=./plugins/metricmock \
    OPSORCH_SECRET_PLUGIN=./plugins/secretmock \
    go run ./cmd/opsorch
    ```
-   (Optional) Build extra mock plugins via `make plugin` inside `opsorch-mock-adapters` and point env vars at `../opsorch-mock-adapters/bin/*`.
-
 2. **MCP tools layer**
    ```bash
    cd ../opsorch-mcp
    npm install
-   OPSORCH_CORE_URL=http://localhost:8080 OPSORCH_CORE_TOKEN=demo npm run dev
+   OPSORCH_CORE_URL=http://localhost:8080 \
+   OPSORCH_CORE_TOKEN=demo \
+   npm run dev
    ```
-
 3. **Copilot runtime**
-   > Copilot runs from the private `opsorch-copilot` repo; the same env vars apply once you have access.
-
+   ```bash
+   cd ../opsorch-copilot
+   npm install
+   MCP_URL=http://localhost:7070/mcp \
+   LLM_PROVIDER=mock \
+   npm run dev
+   ```
 4. **Console UI**
-   > Console lives in the private `opsorch-console` repo; follow the same steps after cloning.
+   ```bash
+   cd ../opsorch-console
+   npm install
+   NEXT_PUBLIC_OPSORCH_CORE_URL=http://localhost:8080 \
+   npm run dev:oss
+   ```
+   Open [http://localhost:3000](http://localhost:3000) and confirm the Incident, Logs, Metrics, Services, Tickets, and Chat tabs load.
+   > Enterprise-only Copilot features require `NEXT_PUBLIC_COPILOT_URL` pointing at a Copilot deployment; the OSS edition talks directly to Core only.
 
 Health checks:
-```bash
-curl http://localhost:8080/health
-curl -s http://localhost:7070/mcp \
-  -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
-```
+- `curl http://localhost:8080/health` (Core)
+- `curl http://localhost:7070/mcp -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'` (MCP)
+- `curl http://localhost:6060/health` (Copilot)
+- Visit `/settings` in the Console to verify endpoints.
 
 ## Build New Adapters
-
-### Quick Start
-1. **Fork the template**: Copy [`opsorch-adapter`](https://github.com/OpsOrch/opsorch-adapter) as `opsorch-<provider>-adapter`
-2. **Choose capabilities**: Implement interfaces you need:
-   - `incident.Provider` - Create/query/update incidents, manage timelines
-   - `log.Provider` - Query logs with structured expressions
-   - `metric.Provider` - Query metrics, discover available metrics
-   - `ticket.Provider` - CRUD operations for tickets
-   - `service.Provider` - Service discovery and metadata
-   - `messaging.Provider` - Send messages to channels/users
-   - `secret.Provider` - Encrypted secret storage
-3. **Register provider**: Export `New(config map[string]any)` and call `<capability>.RegisterProvider("<name>", New)`
-4. **Normalize data**: Map provider responses to OpsOrch schemas; use `metadata` for provider-specific fields
-5. **Test thoroughly**: Add unit tests and integration tests (see existing adapters for examples)
-6. **Deploy**: Build as plugin binary (`make plugin`) or import directly into custom Core build
-
-### Examples
-- **PagerDuty**: Incident + Service providers with QueryScope support
-- **Jira**: Ticket provider with custom fields and JQL filtering  
-- **Prometheus**: Metric provider with PromQL and structured queries
-- **Elasticsearch**: Log provider with full-text search and structured filtering
-
-See individual adapter READMEs for detailed implementation patterns.
+1. **Fork the template**: start from [`opsorch-adapter`](https://github.com/OpsOrch/opsorch-adapter) and rename it to `opsorch-<provider>-adapter`.
+2. **Pick capabilities**: implement `incident`, `alert`, `log`, `metric`, `ticket`, `messaging`, `service`, or `secret` interfaces from `opsorch-core`.
+3. **Register**: export `New(config map[string]any)` and call `<cap>.RegisterProvider("<name>", New)` in an `init()`.
+4. **Normalize**: map upstream payloads into the schemas in `opsorch-core/schema`; stash provider-specific fields under `metadata`.
+5. **Plugin optional**: add a `cmd/<cap>plugin` and run `make plugin` to ship JSON-RPC binaries.
+6. **Test**: unit + integration tests should prove schema fidelity and error handling; the `opsorch-mock-adapters` repo is a good reference.
 
 ## Build Custom Docker Images
-
-Each adapter repository publishes pre-built plugin binaries as GitHub release assets for multiple platforms (linux-amd64, linux-arm64, darwin-amd64, darwin-arm64). You can compose custom Docker images by downloading specific adapter versions without building from source.
-
-### Quick Example
-
-Create a custom OpsOrch image with Jira, PagerDuty, and Slack adapters:
+Use `ghcr.io/opsorch/opsorch-core:<version>` as the base and add only the plugins you need:
 
 ```dockerfile
 FROM ghcr.io/opsorch/opsorch-core:latest
 WORKDIR /opt/opsorch
 
-# Download specific adapter versions
 ADD https://github.com/opsorch/opsorch-jira-adapter/releases/download/v0.2.1/ticketplugin-linux-amd64 ./plugins/ticketplugin
 ADD https://github.com/opsorch/opsorch-pagerduty-adapter/releases/download/v0.1.5/incidentplugin-linux-amd64 ./plugins/incidentplugin
-ADD https://github.com/opsorch/opsorch-slack-adapter/releases/download/v0.3.0/messagingplugin-linux-amd64 ./plugins/messagingplugin
-
 RUN chmod +x ./plugins/*
 
-ENV OPSORCH_TICKET_PLUGIN=/opt/opsorch/plugins/ticketplugin \
-    OPSORCH_INCIDENT_PLUGIN=/opt/opsorch/plugins/incidentplugin \
-    OPSORCH_MESSAGING_PLUGIN=/opt/opsorch/plugins/messagingplugin \
+ENV OPSORCH_TICKET_PLUGIN=/opt/opsorch/plugins/ticketplugin \\
+    OPSORCH_INCIDENT_PLUGIN=/opt/opsorch/plugins/incidentplugin \\
     OPSORCH_BEARER_TOKEN=demo
 ```
 
-Build and run:
+Then:
+
 ```bash
 docker build -t my-opsorch:latest .
 docker run --rm -p 8080:8080 \
   -e OPSORCH_TICKET_CONFIG='{"apiToken":"...","projectKey":"PROJ"}' \
   -e OPSORCH_INCIDENT_CONFIG='{"apiToken":"...","serviceID":"..."}' \
-  -e OPSORCH_MESSAGING_CONFIG='{"token":"xoxb-..."}' \
   my-opsorch:latest
 ```
 
-### Available Adapters
-
-| Adapter | Capability | Plugin Name | Latest Release |
-|---------|------------|-------------|----------------|
-| [opsorch-datadog-adapter](https://github.com/opsorch/opsorch-datadog-adapter) | Metric, Log, Alert, Incident, Service | `metricplugin`, `logplugin`, `alertplugin`, `incidentplugin`, `serviceplugin` | [Releases](https://github.com/opsorch/opsorch-datadog-adapter/releases) |
-| [opsorch-jira-adapter](https://github.com/opsorch/opsorch-jira-adapter) | Ticket | `ticketplugin` | [Releases](https://github.com/opsorch/opsorch-jira-adapter/releases) |
-| [opsorch-pagerduty-adapter](https://github.com/opsorch/opsorch-pagerduty-adapter) | Incident, Service | `incidentplugin`, `serviceplugin` | [Releases](https://github.com/opsorch/opsorch-pagerduty-adapter/releases) |
-| [opsorch-prometheus-adapter](https://github.com/opsorch/opsorch-prometheus-adapter) | Metric | `metricplugin` | [Releases](https://github.com/opsorch/opsorch-prometheus-adapter/releases) |
-| [opsorch-slack-adapter](https://github.com/opsorch/opsorch-slack-adapter) | Messaging | `messagingplugin` | [Releases](https://github.com/opsorch/opsorch-slack-adapter/releases) |
-| [opsorch-elastic-adapter](https://github.com/opsorch/opsorch-elastic-adapter) | Log | `logplugin` | [Releases](https://github.com/opsorch/opsorch-elastic-adapter/releases) |
-| [opsorch-mock-adapters](https://github.com/opsorch/opsorch-mock-adapters) | All (Demo) | `incidentplugin`, `logplugin`, etc. | [Docker Image](https://github.com/opsorch/opsorch-mock-adapters/pkgs/container/opsorch-mock-adapters) |
-
-### Advanced Patterns
-
-**Multi-arch support:**
-```dockerfile
-ARG TARGETARCH
-FROM ghcr.io/opsorch/opsorch-core:latest
-WORKDIR /opt/opsorch
-
-ADD https://github.com/opsorch/opsorch-jira-adapter/releases/download/v0.2.1/ticketplugin-linux-${TARGETARCH} ./plugins/ticketplugin
-RUN chmod +x ./plugins/*
-```
-
-**Version pinning with ARGs:**
-```dockerfile
-ARG JIRA_VERSION=v0.2.1
-ARG PAGERDUTY_VERSION=v0.1.5
-
-FROM ghcr.io/opsorch/opsorch-core:latest
-WORKDIR /opt/opsorch
-
-ADD https://github.com/opsorch/opsorch-jira-adapter/releases/download/${JIRA_VERSION}/ticketplugin-linux-amd64 ./plugins/ticketplugin
-ADD https://github.com/opsorch/opsorch-pagerduty-adapter/releases/download/${PAGERDUTY_VERSION}/incidentplugin-linux-amd64 ./plugins/incidentplugin
-RUN chmod +x ./plugins/*
-```
-
-**Using the demo image:**
-```bash
-# opsorch-mock-adapters publishes a complete demo image with all mock plugins
-docker run --rm -p 8080:8080 ghcr.io/opsorch/opsorch-mock-adapters:latest
-```
+Refer to [DOCKER_COMPOSE.md](DOCKER_COMPOSE.md) for detailed dev/prod stack variants, and `opsorch-mock-adapters` for a turnkey demo image.
 
 ## Safety & Operations
-- Always pass `service`/`team`/`environment` scope fields to narrow expensive queries.
-- Gate high-risk mutations (paging, ticket creation, severity bumps) behind approvals in Copilot or Console.
-- Secrets are decrypted only when invoking providers; never log or return them.
-- Use audit logs (`opsorch-core/api/audit_log*.go`) to track mutations if required.
+- Scope every query with `service` / `team` / `environment` to keep provider-side searches lean.
+- Keep mutation workflows (paging, escalations, ticket creation, messaging) behind approvals in Console or Copilot.
+- Secrets are always encrypted at rest; never log decrypted configs or tokens.
+- Use the audit log APIs (`opsorch-core/api/audit_log*.go`) when you need tamper-evident trails.
 
 ## Contributing & Support
-- Issues/PRs welcome across repos; follow `opsorch-core/CONTRIBUTING.md` for coding standards.
-- Discuss architectures via `OPSORCH_MASTER.md` or the draw.io diagram.
-- Need another adapter? File an issue in this meta repo or the relevant service repo.
+- Issues/PRs welcome across repos—follow `opsorch-core/CONTRIBUTING.md` for coding standards.
+- See the Architecture section above for the system diagram.
+- Need an adapter we do not ship yet? File an issue in this org or reach out at [opsorch.com](https://www.opsorch.com/).
