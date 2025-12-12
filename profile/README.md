@@ -18,6 +18,7 @@ OpsOrch is an open, modular incident-operations platform that keeps operational 
 | --- | --- | --- |
 | [`opsorch-adapter`](https://github.com/OpsOrch/opsorch-adapter) | Template | Starter repo showing provider + plugin patterns |
 | [`opsorch-mock-adapters`](https://github.com/OpsOrch/opsorch-mock-adapters) | All (demo) | Ships seeded data + demo binaries used in Docker examples |
+| [`opsorch-github-adapter`](https://github.com/OpsOrch/opsorch-github-adapter) | Ticket, Deployment | GitHub Issues + Actions workflow runs with comprehensive filtering |
 | [`opsorch-datadog-adapter`](https://github.com/OpsOrch/opsorch-datadog-adapter) | Metric, Log, Alert, Incident, Service | Uses official Datadog Go SDKs |
 | [`opsorch-pagerduty-adapter`](https://github.com/OpsOrch/opsorch-pagerduty-adapter) | Incident, Service | PagerDuty incidents/timelines/services |
 | [`opsorch-jira-adapter`](https://github.com/OpsOrch/opsorch-jira-adapter) | Ticket | Jira CRUD + advanced field handling |
@@ -53,6 +54,7 @@ graph TB
     subgraph "External Systems"
         PD[PagerDuty]
         Jira[Jira]
+        GitHub[GitHub]
         DD[Datadog]
         Prom[Prometheus]
         ES[Elasticsearch]
@@ -71,6 +73,7 @@ graph TB
     InProc --> Secret
     Plugins --> PD
     Plugins --> Jira
+    Plugins --> GitHub
     Plugins --> DD
     Plugins --> Prom
     Plugins --> ES
@@ -161,11 +164,13 @@ Use `ghcr.io/opsorch/opsorch-core:<version>` as the base and add only the plugin
 FROM ghcr.io/opsorch/opsorch-core:latest
 WORKDIR /opt/opsorch
 
-ADD https://github.com/opsorch/opsorch-jira-adapter/releases/download/v0.2.1/ticketplugin-linux-amd64 ./plugins/ticketplugin
+ADD https://github.com/opsorch/opsorch-github-adapter/releases/download/v0.1.0/ticketplugin-linux-amd64 ./plugins/ticketplugin
+ADD https://github.com/opsorch/opsorch-github-adapter/releases/download/v0.1.0/deploymentplugin-linux-amd64 ./plugins/deploymentplugin
 ADD https://github.com/opsorch/opsorch-pagerduty-adapter/releases/download/v0.1.5/incidentplugin-linux-amd64 ./plugins/incidentplugin
 RUN chmod +x ./plugins/*
 
 ENV OPSORCH_TICKET_PLUGIN=/opt/opsorch/plugins/ticketplugin \\
+    OPSORCH_DEPLOYMENT_PLUGIN=/opt/opsorch/plugins/deploymentplugin \\
     OPSORCH_INCIDENT_PLUGIN=/opt/opsorch/plugins/incidentplugin \\
     OPSORCH_BEARER_TOKEN=demo
 ```
@@ -175,7 +180,8 @@ Then:
 ```bash
 docker build -t my-opsorch:latest .
 docker run --rm -p 8080:8080 \
-  -e OPSORCH_TICKET_CONFIG='{"apiToken":"...","projectKey":"PROJ"}' \
+  -e OPSORCH_TICKET_CONFIG='{"token":"ghp_...","owner":"myorg","repo":"myrepo"}' \
+  -e OPSORCH_DEPLOYMENT_CONFIG='{"token":"ghp_...","owner":"myorg","repo":"myrepo"}' \
   -e OPSORCH_INCIDENT_CONFIG='{"apiToken":"...","serviceID":"..."}' \
   my-opsorch:latest
 ```
