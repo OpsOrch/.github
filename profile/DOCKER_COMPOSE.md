@@ -103,23 +103,37 @@ docker build -t my-opsorch-core:latest .
 
 ### Step 2: Configure Environment Variables
 
-Create a `.env` file:
+Create a `.env` file. Each capability in `opsorch-core` loads JSON from
+`OPSORCH_<CAPABILITY>_CONFIG` via `loadProviderConfig` (see
+`opsorch-core/api/provider_config_handler.go:199`) and forwards that map directly
+to the adapter. Use the fields the adapters document (examples below match the
+default PagerDuty/Jira/Prometheus/Elastic/Slack bundles that ship with the
+Compose templates):
 
 ```bash
 # Security
 OPSORCH_BEARER_TOKEN=your-secure-random-token-here
 
-# PagerDuty Configuration
-PAGERDUTY_CONFIG={"apiToken":"your-pd-token","serviceID":"your-service-id"}
+# Incident Configuration (PagerDuty incident plugin)
+OPSORCH_INCIDENT_CONFIG={"apiToken":"your-pd-token","serviceID":"PXXXXXX","fromEmail":"pagerduty-user@example.com","apiURL":"https://api.pagerduty.com"}
 
-# Jira Configuration  
-JIRA_CONFIG={"apiToken":"your-jira-token","email":"your-email@company.com","baseURL":"https://your-domain.atlassian.net"}
+# Ticket Configuration (Jira ticket plugin)
+OPSORCH_TICKET_CONFIG={"apiToken":"your-jira-token","email":"your-email@example.com","apiURL":"https://your-domain.atlassian.net","projectKey":"OPS","defaultIssueType":"Task"}
 
-# Prometheus Configuration
-PROMETHEUS_CONFIG={"url":"http://your-prometheus:9090"}
+# Metric Configuration (Prometheus metric plugin)
+OPSORCH_METRIC_CONFIG={"url":"http://your-prometheus:9090"}
 
-# Slack Configuration
-SLACK_CONFIG={"token":"xoxb-your-slack-bot-token"}
+# Log Configuration (Elasticsearch log plugin)
+OPSORCH_LOG_CONFIG={"addresses":["http://your-elasticsearch:9200"],"username":"elastic","password":"your-password","indexPattern":"logs-*"}
+
+# Messaging Configuration (Slack messaging plugin)
+OPSORCH_MESSAGING_CONFIG={"token":"xoxb-your-slack-bot-token"}
+
+# Service Configuration (PagerDuty service plugin)
+OPSORCH_SERVICE_CONFIG={"apiToken":"your-pd-token","apiURL":"https://api.pagerduty.com"}
+
+# Additional capabilities follow the same pattern: export `OPSORCH_<CAPABILITY>_CONFIG`
+# with JSON that matches the adapter you mount (alerts, deployments, etc.).
 
 # Console Configuration
 CORE_URL=http://localhost:8080
@@ -146,12 +160,15 @@ docker compose -f docker-compose.prod.yml up -d
 
 ## Available Adapters
 
+Set the JSON payloads in the `Configuration` column as `OPSORCH_<CAPABILITY>_CONFIG`
+for the respective capability (e.g., `OPSORCH_TICKET_CONFIG` for Jira).
+
 | Provider | Capability | Plugin Binary | Configuration |
 |----------|------------|---------------|---------------|
-| **PagerDuty** | Incident, Service | `incidentplugin`, `serviceplugin` | `{"apiToken":"pd_token","serviceID":"service_id"}` |
-| **Jira** | Ticket | `ticketplugin` | `{"apiToken":"token","email":"user@domain","baseURL":"https://domain.atlassian.net"}` |
+| **PagerDuty** | Incident, Service | `incidentplugin`, `serviceplugin` | `Incident: {"apiToken":"pd_token","serviceID":"PXXXXXX","fromEmail":"user@example.com"}`<br>`Service: {"apiToken":"pd_token"}` |
+| **Jira** | Ticket | `ticketplugin` | `{"apiToken":"token","email":"user@domain","apiURL":"https://domain.atlassian.net","projectKey":"PROJ"}` |
 | **Prometheus** | Metric | `metricplugin` | `{"url":"http://prometheus:9090"}` |
-| **Elasticsearch** | Log | `logplugin` | `{"url":"http://elasticsearch:9200","username":"user","password":"pass"}` |
+| **Elasticsearch** | Log | `logplugin` | `{"addresses":["http://elasticsearch:9200"],"username":"user","password":"pass","indexPattern":"logs-*"}` |
 | **Datadog** | Metric, Log, Alert, Incident, Service | `metricplugin`, `logplugin`, etc. | `{"apiKey":"dd_api_key","appKey":"dd_app_key","site":"datadoghq.com"}` |
 | **Slack** | Messaging | `messagingplugin` | `{"token":"xoxb-slack-bot-token"}` |
 
@@ -242,7 +259,7 @@ docker exec opsorch-mcp curl http://opsorch-mock-adapters:8080/health
 docker compose logs opsorch-mock-adapters
 
 # Verify provider configuration JSON is valid (for production)
-echo $JIRA_CONFIG | jq .
+echo $OPSORCH_TICKET_CONFIG | jq .
 ```
 
 ### Getting Help

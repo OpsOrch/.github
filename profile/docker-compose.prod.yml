@@ -31,27 +31,27 @@ services:
       # Provider configuration - customize based on your needs
       # Incident Management (choose one)
       - OPSORCH_INCIDENT_PLUGIN=/opt/opsorch/plugins/incidentplugin
-      - OPSORCH_INCIDENT_CONFIG=${PAGERDUTY_CONFIG:-{}}
+      - OPSORCH_INCIDENT_CONFIG=${OPSORCH_INCIDENT_CONFIG:-{}}
       
       # Ticketing (choose one)
       - OPSORCH_TICKET_PLUGIN=/opt/opsorch/plugins/ticketplugin
-      - OPSORCH_TICKET_CONFIG=${JIRA_CONFIG:-{}}
+      - OPSORCH_TICKET_CONFIG=${OPSORCH_TICKET_CONFIG:-{}}
       
       # Metrics (choose one)
       - OPSORCH_METRIC_PLUGIN=/opt/opsorch/plugins/metricplugin
-      - OPSORCH_METRIC_CONFIG=${PROMETHEUS_CONFIG:-{}}
+      - OPSORCH_METRIC_CONFIG=${OPSORCH_METRIC_CONFIG:-{}}
       
       # Logs (choose one)
       - OPSORCH_LOG_PLUGIN=/opt/opsorch/plugins/logplugin
-      - OPSORCH_LOG_CONFIG=${ELASTICSEARCH_CONFIG:-{}}
+      - OPSORCH_LOG_CONFIG=${OPSORCH_LOG_CONFIG:-{}}
       
       # Messaging (optional)
       - OPSORCH_MESSAGING_PLUGIN=/opt/opsorch/plugins/messagingplugin
-      - OPSORCH_MESSAGING_CONFIG=${SLACK_CONFIG:-{}}
+      - OPSORCH_MESSAGING_CONFIG=${OPSORCH_MESSAGING_CONFIG:-{}}
       
       # Services (optional)
       - OPSORCH_SERVICE_PLUGIN=/opt/opsorch/plugins/serviceplugin
-      - OPSORCH_SERVICE_CONFIG=${SERVICE_CONFIG:-{}}
+      - OPSORCH_SERVICE_CONFIG=${OPSORCH_SERVICE_CONFIG:-{}}
     volumes:
       # Mount directory containing your adapter plugins
       - ./plugins:/opt/opsorch/plugins:ro
@@ -126,20 +126,23 @@ networks:
 # Example .env file configuration:
 # OPSORCH_BEARER_TOKEN=your-secure-random-token
 # 
-# # PagerDuty Configuration
-# PAGERDUTY_CONFIG={"apiToken":"your-pd-token","serviceID":"your-service-id"}
+# # Incident Configuration (PagerDuty incident plugin)
+# OPSORCH_INCIDENT_CONFIG={"apiToken":"your-pd-token","serviceID":"PXXXXXX","fromEmail":"pagerduty-user@example.com","apiURL":"https://api.pagerduty.com"}
 # 
-# # Jira Configuration  
-# JIRA_CONFIG={"apiToken":"your-jira-token","email":"your-email","baseURL":"https://your-domain.atlassian.net"}
+# # Ticket Configuration  (Jira ticket plugin)
+# OPSORCH_TICKET_CONFIG={"apiToken":"your-jira-token","email":"your-email","apiURL":"https://your-domain.atlassian.net","projectKey":"OPS"}
 # 
-# # Prometheus Configuration
-# PROMETHEUS_CONFIG={"url":"http://your-prometheus:9090"}
+# # Metric Configuration (Prometheus metric plugin)
+# OPSORCH_METRIC_CONFIG={"url":"http://your-prometheus:9090"}
 # 
-# # Elasticsearch Configuration
-# ELASTICSEARCH_CONFIG={"url":"http://your-elasticsearch:9200","username":"elastic","password":"your-password"}
+# # Log Configuration (Elasticsearch log plugin)
+# OPSORCH_LOG_CONFIG={"addresses":["http://your-elasticsearch:9200"],"username":"elastic","password":"your-password","indexPattern":"logs-*"}
 # 
-# # Slack Configuration
-# SLACK_CONFIG={"token":"xoxb-your-slack-bot-token"}
+# # Messaging Configuration (Slack messaging plugin)
+# OPSORCH_MESSAGING_CONFIG={"token":"xoxb-your-slack-bot-token"}
+# 
+# # Service Configuration (PagerDuty service plugin)
+# OPSORCH_SERVICE_CONFIG={"apiToken":"your-pd-token","apiURL":"https://api.pagerduty.com"}
 # 
 # # Console Configuration
 # CORE_URL=http://localhost:8080

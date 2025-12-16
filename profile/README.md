@@ -87,6 +87,31 @@ graph TB
 - **Security-first:** pluggable secret backends (Vault/KMS/local AES-GCM), env-scoped queries, audit hooks
 - **AI-native:** MCP provides typed tools; Copilot plans tool calls, tracks evidence, and surfaces deep links back to Console. OSS Console connects only to Core; Enterprise wiring adds optional Copilot chat.
 
+### Provider Configuration Model
+`opsorch-core` reads provider settings with
+`loadProviderConfig` (`opsorch-core/api/provider_config_handler.go:199`). Every
+capability looks for the trio `OPSORCH_<CAP>_PROVIDER`,
+`OPSORCH_<CAP>_PLUGIN`, and `OPSORCH_<CAP>_CONFIG`:
+- `OPSORCH_<CAP>_PROVIDER` – registered provider name (e.g., `jira`, `pagerduty`)
+- `OPSORCH_<CAP>_PLUGIN` – optional JSON-RPC plugin path that overrides the registry
+- `OPSORCH_<CAP>_CONFIG` – JSON payload forwarded verbatim to the adapter constructor
+
+The production Compose templates ship with the following defaults; reuse the
+same JSON keys when building custom stacks:
+
+| Capability | Env Var | Example Config |
+| --- | --- | --- |
+| Incident (PagerDuty) | `OPSORCH_INCIDENT_CONFIG` | `{"apiToken":"pd_token","serviceID":"PXXXXXX","fromEmail":"pd-user@example.com","apiURL":"https://api.pagerduty.com"}` |
+| Ticket (Jira) | `OPSORCH_TICKET_CONFIG` | `{"apiToken":"jira_token","email":"user@example.com","apiURL":"https://your-domain.atlassian.net","projectKey":"OPS"}` |
+| Metric (Prometheus) | `OPSORCH_METRIC_CONFIG` | `{"url":"http://prometheus:9090"}` |
+| Log (Elasticsearch) | `OPSORCH_LOG_CONFIG` | `{"addresses":["http://elasticsearch:9200"],"username":"elastic","password":"changeme","indexPattern":"logs-*"}` |
+| Messaging (Slack) | `OPSORCH_MESSAGING_CONFIG` | `{"token":"xoxb-your-slack-bot-token"}` |
+| Service (PagerDuty) | `OPSORCH_SERVICE_CONFIG` | `{"apiToken":"pd_token","apiURL":"https://api.pagerduty.com"}` |
+
+Adapters such as GitHub Issues, Datadog, Prometheus alerts, etc. expose the
+fields they expect inside their own README files; the Core runtime simply passes
+whatever JSON you provide straight through.
+
 ## Run the Stack Locally
 
 ### Docker Compose (fastest path)
