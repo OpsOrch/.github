@@ -18,7 +18,7 @@ OpsOrch is an open, modular incident-operations platform that keeps operational 
 | --- | --- | --- |
 | [`opsorch-adapter`](https://github.com/OpsOrch/opsorch-adapter) | Template | Starter repo showing provider + plugin patterns |
 | [`opsorch-mock-adapters`](https://github.com/OpsOrch/opsorch-mock-adapters) | All (demo) | Ships seeded data + demo binaries used in Docker examples |
-| [`opsorch-github-adapter`](https://github.com/OpsOrch/opsorch-github-adapter) | Ticket, Deployment | GitHub Issues + Actions workflow runs with comprehensive filtering |
+| [`opsorch-github-adapter`](https://github.com/OpsOrch/opsorch-github-adapter) | Ticket, Deployment, Team | GitHub Issues + Actions workflow runs + Teams with comprehensive filtering |
 | [`opsorch-datadog-adapter`](https://github.com/OpsOrch/opsorch-datadog-adapter) | Metric, Log, Alert, Incident, Service | Uses official Datadog Go SDKs |
 | [`opsorch-pagerduty-adapter`](https://github.com/OpsOrch/opsorch-pagerduty-adapter) | Incident, Service | PagerDuty incidents/timelines/services |
 | [`opsorch-jira-adapter`](https://github.com/OpsOrch/opsorch-jira-adapter) | Ticket | Jira CRUD + advanced field handling |
@@ -81,7 +81,7 @@ graph TB
 ```
 
 ### Design Principles
-- **Single API surface:** incidents, alerts, timelines, logs, metrics, tickets, messaging, services, secrets
+- **Single API surface:** incidents, alerts, timelines, logs, metrics, tickets, messaging, services, teams, secrets
 - **Config-driven routing:** `OPSORCH_<CAP>_PROVIDER`, `OPSORCH_<CAP>_PLUGIN`, and `OPSORCH_<CAP>_CONFIG` select providers per capability
 - **No operational data storage:** Core keeps encrypted configs + optional audit logs; data stays in source tools
 - **Security-first:** pluggable secret backends (Vault/KMS/local AES-GCM), env-scoped queries, audit hooks
@@ -107,6 +107,7 @@ same JSON keys when building custom stacks:
 | Log (Elasticsearch) | `OPSORCH_LOG_CONFIG` | `{"addresses":["http://elasticsearch:9200"],"username":"elastic","password":"changeme","indexPattern":"logs-*"}` |
 | Messaging (Slack) | `OPSORCH_MESSAGING_CONFIG` | `{"token":"xoxb-your-slack-bot-token"}` |
 | Service (PagerDuty) | `OPSORCH_SERVICE_CONFIG` | `{"apiToken":"pd_token","apiURL":"https://api.pagerduty.com"}` |
+| Team (GitHub) | `OPSORCH_TEAM_CONFIG` | `{"token":"ghp_token","organization":"your-org"}` |
 
 Adapters such as GitHub Issues, Datadog, Prometheus alerts, etc. expose the
 fields they expect inside their own README files; the Core runtime simply passes
@@ -176,7 +177,7 @@ Health checks:
 
 ## Build New Adapters
 1. **Fork the template**: start from [`opsorch-adapter`](https://github.com/OpsOrch/opsorch-adapter) and rename it to `opsorch-<provider>-adapter`.
-2. **Pick capabilities**: implement `incident`, `alert`, `log`, `metric`, `ticket`, `messaging`, `service`, or `secret` interfaces from `opsorch-core`.
+2. **Pick capabilities**: implement `incident`, `alert`, `log`, `metric`, `ticket`, `messaging`, `service`, `team`, or `secret` interfaces from `opsorch-core`.
 3. **Register**: export `New(config map[string]any)` and call `<cap>.RegisterProvider("<name>", New)` in an `init()`.
 4. **Normalize**: map upstream payloads into the schemas in `opsorch-core/schema`; stash provider-specific fields under `metadata`.
 5. **Plugin optional**: add a `cmd/<cap>plugin` and run `make plugin` to ship JSON-RPC binaries.
@@ -207,14 +208,14 @@ docker build -t my-opsorch:latest .
 docker run --rm -p 8080:8080 \
   -e OPSORCH_TICKET_CONFIG='{"token":"ghp_...","owner":"myorg","repo":"myrepo"}' \
   -e OPSORCH_DEPLOYMENT_CONFIG='{"token":"ghp_...","owner":"myorg","repo":"myrepo"}' \
-  -e OPSORCH_INCIDENT_CONFIG='{"apiToken":"...","serviceID":"..."}' \
+  -e OPSORCH_INCIDENT_CONFIG='{"apiToken":"...","serviceID":"PXXXXXX","fromEmail":"pagerduty-user@example.com","apiURL":"https://api.pagerduty.com"}' \
   my-opsorch:latest
 ```
 
 Refer to [DOCKER_COMPOSE.md](DOCKER_COMPOSE.md) for detailed dev/prod stack variants, and `opsorch-mock-adapters` for a turnkey demo image.
 
 ## Safety & Operations
-- Scope every query with `service` / `team` / `environment` to keep provider-side searches lean.
+- Scope every query with `service` / `team` / `environment` to keep provider-side searches lean. Team scoping enables organizational filtering across all capabilities.
 - Keep mutation workflows (paging, escalations, ticket creation, messaging) behind approvals in Console or Copilot.
 - Secrets are always encrypted at rest; never log decrypted configs or tokens.
 - Use the audit log APIs (`opsorch-core/api/audit_log*.go`) when you need tamper-evident trails.
