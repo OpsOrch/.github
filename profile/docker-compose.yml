@@ -89,6 +89,11 @@ services:
       
       # Optional: Connect to Copilot (if available)
       # - NEXT_PUBLIC_COPILOT_URL=http://localhost:6060
+      
+      # Optional: Configure Copilot LLM Provider
+      # - LLM_PROVIDER=gemini  # or "openai", "anthropic"
+      # - GEMINI_API_KEY=your-api-key
+      # - GEMINI_MODEL=gemini-3-flash-preview  # optional, latest model
     depends_on:
       - opsorch-mock-adapters
     healthcheck:

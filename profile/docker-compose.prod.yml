@@ -2,6 +2,11 @@
 # This Docker Compose file sets up a production-ready OpsOrch environment.
 # You'll need to configure real provider credentials via environment variables.
 #
+# Note: OpsOrch Core is a minimal base image. Every organization adds the adapters 
+# they need (Jira, Prometheus, PagerDuty, etc.) as plugin binaries. This example 
+# shows the volume-mounting approach, but you can also build a custom image with 
+# plugins bundled in. See .github/profile/BUILDING_WITH_ADAPTERS.md for details.
+#
 # Usage:
 #   1. curl -O https://raw.githubusercontent.com/OpsOrch/.github/main/profile/docker-compose.prod.yml
 #   2. Set up your provider credentials (see environment variables below)
@@ -15,10 +20,18 @@
 version: '3.8'
 
 services:
-  # OpsOrch Core (Base image - you'll need to build with your adapters)
+  # OpsOrch Core - The orchestration layer
+  # Base image is minimal. Add your adapters in one of two ways:
+  #   1. Build a custom image with plugins bundled (recommended for production)
+  #   2. Mount plugin binaries via volumes (shown here, flexible for development)
+  # 
+  # See .github/profile/BUILDING_WITH_ADAPTERS.md or opsorch.com/docs/building-with-adapters
+  # for complete examples with Jira, Prometheus, PagerDuty, Elasticsearch, etc.
   opsorch-core:
-    # Option 1: Use base image and mount plugins
+    # Option 1: Use base image and mount plugins (development/testing)
     image: ghcr.io/opsorch/opsorch-core:latest
+    # Option 2: Use your custom-built image with plugins bundled
+    # image: your-registry/opsorch-core:v1.0.0
     container_name: opsorch-core-prod
     ports:
       - "8080:8080"
@@ -28,32 +41,35 @@ services:
       - OPSORCH_LOG_LEVEL=info
       - OPSORCH_PORT=8080
       
-      # Provider configuration - customize based on your needs
-      # Incident Management (choose one)
+      # Provider configuration - customize based on your tool stack
+      # Each capability (incident, ticket, metric, log, etc.) can use a different adapter
+      
+      # Incident Management (choose one: PagerDuty, Datadog, etc.)
       - OPSORCH_INCIDENT_PLUGIN=/opt/opsorch/plugins/incidentplugin
       - OPSORCH_INCIDENT_CONFIG=${OPSORCH_INCIDENT_CONFIG:-{}}
       
-      # Ticketing (choose one)
+      # Ticketing (choose one: Jira, GitHub Issues, etc.)
       - OPSORCH_TICKET_PLUGIN=/opt/opsorch/plugins/ticketplugin
       - OPSORCH_TICKET_CONFIG=${OPSORCH_TICKET_CONFIG:-{}}
       
-      # Metrics (choose one)
+      # Metrics (choose one: Prometheus, Datadog, etc.)
       - OPSORCH_METRIC_PLUGIN=/opt/opsorch/plugins/metricplugin
       - OPSORCH_METRIC_CONFIG=${OPSORCH_METRIC_CONFIG:-{}}
       
-      # Logs (choose one)
+      # Logs (choose one: Elasticsearch, Datadog, etc.)
       - OPSORCH_LOG_PLUGIN=/opt/opsorch/plugins/logplugin
       - OPSORCH_LOG_CONFIG=${OPSORCH_LOG_CONFIG:-{}}
       
-      # Messaging (optional)
+      # Messaging (optional: Slack, etc.)
       - OPSORCH_MESSAGING_PLUGIN=/opt/opsorch/plugins/messagingplugin
       - OPSORCH_MESSAGING_CONFIG=${OPSORCH_MESSAGING_CONFIG:-{}}
       
-      # Services (optional)
+      # Services (optional: PagerDuty, Datadog, etc.)
       - OPSORCH_SERVICE_PLUGIN=/opt/opsorch/plugins/serviceplugin
       - OPSORCH_SERVICE_CONFIG=${OPSORCH_SERVICE_CONFIG:-{}}
     volumes:
-      # Mount directory containing your adapter plugins
+      # Mount directory containing your adapter plugin binaries
+      # Download from: https://github.com/OpsOrch/opsorch-{adapter}-adapter/releases
       - ./plugins:/opt/opsorch/plugins:ro
       # Optional: Mount custom configuration
       - ./config:/opt/opsorch/config:ro

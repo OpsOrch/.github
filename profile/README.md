@@ -183,36 +183,70 @@ Health checks:
 5. **Plugin optional**: add a `cmd/<cap>plugin` and run `make plugin` to ship JSON-RPC binaries.
 6. **Test**: unit + integration tests should prove schema fidelity and error handling; the `opsorch-mock-adapters` repo is a good reference.
 
-## Build Custom Docker Images
-Use `ghcr.io/opsorch/opsorch-core:<version>` as the base and add only the plugins you need:
+## Building OpsOrch with Your Adapter Stack
+
+Every organization uses different tools. OpsOrch Core is a minimal base image—you add the adapters you need as plugin binaries. This is the standard deployment approach.
+
+Use `ghcr.io/opsorch/opsorch-core:<version>` as the base and add only the plugins for your stack:
+
+**Example: Incident Management + Ticketing + Monitoring Stack**
 
 ```dockerfile
-FROM ghcr.io/opsorch/opsorch-core:latest
+FROM ghcr.io/opsorch/opsorch-core:v0.2.0
 WORKDIR /opt/opsorch
 
-ADD https://github.com/opsorch/opsorch-github-adapter/releases/download/v0.1.0/ticketplugin-linux-amd64 ./plugins/ticketplugin
-ADD https://github.com/opsorch/opsorch-github-adapter/releases/download/v0.1.0/deploymentplugin-linux-amd64 ./plugins/deploymentplugin
-ADD https://github.com/opsorch/opsorch-pagerduty-adapter/releases/download/v0.1.5/incidentplugin-linux-amd64 ./plugins/incidentplugin
+# Incidents (PagerDuty)
+ADD https://github.com/OpsOrch/opsorch-pagerduty-adapter/releases/download/v0.1.5/incidentplugin-linux-amd64 ./plugins/incidentplugin
+
+# Tickets (Jira)  
+ADD https://github.com/OpsOrch/opsorch-jira-adapter/releases/download/v0.1.0/ticketplugin-linux-amd64 ./plugins/ticketplugin
+
+# Metrics (Prometheus)
+ADD https://github.com/OpsOrch/opsorch-prometheus-adapter/releases/download/v0.1.0/metricplugin-linux-amd64 ./plugins/metricplugin
+
+# Logs (Elasticsearch)
+ADD https://github.com/OpsOrch/opsorch-elastic-adapter/releases/download/v0.1.0/logplugin-linux-amd64 ./plugins/logplugin
+
+# Messaging (Slack)
+ADD https://github.com/OpsOrch/opsorch-slack-adapter/releases/download/v0.1.0/messagingplugin-linux-amd64 ./plugins/messagingplugin
+
 RUN chmod +x ./plugins/*
 
-ENV OPSORCH_TICKET_PLUGIN=/opt/opsorch/plugins/ticketplugin \\
-    OPSORCH_DEPLOYMENT_PLUGIN=/opt/opsorch/plugins/deploymentplugin \\
-    OPSORCH_INCIDENT_PLUGIN=/opt/opsorch/plugins/incidentplugin \\
-    OPSORCH_BEARER_TOKEN=demo
+ENV OPSORCH_INCIDENT_PLUGIN=/opt/opsorch/plugins/incidentplugin \
+    OPSORCH_TICKET_PLUGIN=/opt/opsorch/plugins/ticketplugin \
+    OPSORCH_METRIC_PLUGIN=/opt/opsorch/plugins/metricplugin \
+    OPSORCH_LOG_PLUGIN=/opt/opsorch/plugins/logplugin \
+    OPSORCH_MESSAGING_PLUGIN=/opt/opsorch/plugins/messagingplugin
 ```
 
-Then:
+Then configure each adapter at runtime:
 
 ```bash
 docker build -t my-opsorch:latest .
-docker run --rm -p 8080:8080 \
-  -e OPSORCH_TICKET_CONFIG='{"token":"ghp_...","owner":"myorg","repo":"myrepo"}' \
-  -e OPSORCH_DEPLOYMENT_CONFIG='{"token":"ghp_...","owner":"myorg","repo":"myrepo"}' \
-  -e OPSORCH_INCIDENT_CONFIG='{"apiToken":"...","serviceID":"PXXXXXX","fromEmail":"pagerduty-user@example.com","apiURL":"https://api.pagerduty.com"}' \
-  my-opsorch:latest
+docker run -p 8080:8080 --env-file .env my-opsorch:latest
 ```
 
-Refer to [DOCKER_COMPOSE.md](DOCKER_COMPOSE.md) for detailed dev/prod stack variants, and `opsorch-mock-adapters` for a turnkey demo image.
+**.env file:**
+```bash
+OPSORCH_BEARER_TOKEN=your-token
+
+# PagerDuty
+OPSORCH_INCIDENT_CONFIG={"apiToken":"pd_token","serviceID":"PXXXXXX","fromEmail":"oncall@example.com"}
+
+# Jira
+OPSORCH_TICKET_CONFIG={"apiToken":"jira_token","email":"bot@example.com","apiURL":"https://your-domain.atlassian.net","projectKey":"OPS"}
+
+# Prometheus
+OPSORCH_METRIC_CONFIG={"url":"http://prometheus:9090"}
+
+# Elasticsearch
+OPSORCH_LOG_CONFIG={"addresses":["http://elasticsearch:9200"],"username":"elastic","password":"changeme","indexPattern":"logs-*"}
+
+# Slack
+OPSORCH_MESSAGING_CONFIG={"token":"xoxb-slack-token"}
+```
+
+**Comprehensive Guide:** See [BUILDING_WITH_ADAPTERS.md](BUILDING_WITH_ADAPTERS.md) for complete examples, configuration reference for all adapters, troubleshooting, and production best practices. Also available on [opsorch.com/docs/building-with-adapters](https://opsorch.com/docs/building-with-adapters).
 
 ## Safety & Operations
 - Scope every query with `service` / `team` / `environment` to keep provider-side searches lean. Team scoping enables organizational filtering across all capabilities.
