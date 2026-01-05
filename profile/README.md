@@ -113,6 +113,9 @@ Adapters such as GitHub Issues, Datadog, Prometheus alerts, etc. expose the
 fields they expect inside their own README files; the Core runtime simply passes
 whatever JSON you provide straight through.
 
+### Provider Deep Links
+Normalized resources carry optional `url` fields for deep linking back to upstream systems. For individual resources (incidents, alerts, tickets, etc.), the URL links to that specific resource. For collections like log entries and metric series, the URL links to the query results or filtered view in the source system (e.g., Datadog logs dashboard, Grafana metric chart). Adapters should populate these URLs whenever the provider exposes canonical UI links so OpsOrch clients can jump directly to the source system. The field is passthrough only—OpsOrch does not generate, log, or modify these URLs—so adapters remain responsible for ensuring they do not leak secrets.
+
 ## Run the Stack Locally
 
 ### Docker Compose (fastest path)
@@ -196,7 +199,7 @@ FROM ghcr.io/opsorch/opsorch-core:v0.2.0
 WORKDIR /opt/opsorch
 
 # Incidents (PagerDuty)
-ADD https://github.com/OpsOrch/opsorch-pagerduty-adapter/releases/download/v0.1.5/incidentplugin-linux-amd64 ./plugins/incidentplugin
+ADD https://github.com/OpsOrch/opsorch-pagerduty-adapter/releases/download/v0.1.0/incidentplugin-linux-amd64 ./plugins/incidentplugin
 
 # Tickets (Jira)  
 ADD https://github.com/OpsOrch/opsorch-jira-adapter/releases/download/v0.1.0/ticketplugin-linux-amd64 ./plugins/ticketplugin

@@ -88,10 +88,10 @@ FROM ghcr.io/opsorch/opsorch-core:latest
 WORKDIR /opt/opsorch
 
 # Download specific adapter versions you need
-ADD https://github.com/OpsOrch/opsorch-jira-adapter/releases/download/v0.2.1/ticketplugin-linux-amd64 ./plugins/ticketplugin
-ADD https://github.com/OpsOrch/opsorch-pagerduty-adapter/releases/download/v0.1.5/incidentplugin-linux-amd64 ./plugins/incidentplugin
-ADD https://github.com/OpsOrch/opsorch-prometheus-adapter/releases/download/v0.3.0/metricplugin-linux-amd64 ./plugins/metricplugin
-ADD https://github.com/OpsOrch/opsorch-slack-adapter/releases/download/v0.2.0/messagingplugin-linux-amd64 ./plugins/messagingplugin
+ADD https://github.com/OpsOrch/opsorch-jira-adapter/releases/download/v0.1.0/ticketplugin-linux-amd64 ./plugins/ticketplugin
+ADD https://github.com/OpsOrch/opsorch-pagerduty-adapter/releases/download/v0.1.0/incidentplugin-linux-amd64 ./plugins/incidentplugin
+ADD https://github.com/OpsOrch/opsorch-prometheus-adapter/releases/download/v0.1.0/metricplugin-linux-amd64 ./plugins/metricplugin
+ADD https://github.com/OpsOrch/opsorch-slack-adapter/releases/download/v0.1.0/messagingplugin-linux-amd64 ./plugins/messagingplugin
 
 RUN chmod +x ./plugins/*
 ```

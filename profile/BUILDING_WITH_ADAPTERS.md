@@ -119,7 +119,7 @@ Each adapter repository publishes pre-built plugin binaries for multiple archite
 ```
 https://github.com/OpsOrch/opsorch-jira-adapter/releases/download/v0.1.0/ticketplugin-linux-amd64
 https://github.com/OpsOrch/opsorch-prometheus-adapter/releases/download/v0.1.0/metricplugin-linux-amd64
-https://github.com/OpsOrch/opsorch-pagerduty-adapter/releases/download/v0.1.5/incidentplugin-linux-amd64
+https://github.com/OpsOrch/opsorch-pagerduty-adapter/releases/download/v0.1.0/incidentplugin-linux-amd64
 ```
 
 ## Building Custom Images
@@ -148,8 +148,8 @@ FROM ghcr.io/opsorch/opsorch-core:v0.2.0
 WORKDIR /opt/opsorch
 
 # Incident Management (PagerDuty)
-ADD https://github.com/OpsOrch/opsorch-pagerduty-adapter/releases/download/v0.1.5/incidentplugin-linux-amd64 ./plugins/incidentplugin
-ADD https://github.com/OpsOrch/opsorch-pagerduty-adapter/releases/download/v0.1.5/serviceplugin-linux-amd64 ./plugins/serviceplugin
+ADD https://github.com/OpsOrch/opsorch-pagerduty-adapter/releases/download/v0.1.0/incidentplugin-linux-amd64 ./plugins/incidentplugin
+ADD https://github.com/OpsOrch/opsorch-pagerduty-adapter/releases/download/v0.1.0/serviceplugin-linux-amd64 ./plugins/serviceplugin
 
 # Ticketing (Jira)
 ADD https://github.com/OpsOrch/opsorch-jira-adapter/releases/download/v0.1.0/ticketplugin-linux-amd64 ./plugins/ticketplugin
@@ -403,7 +403,7 @@ ADD https://github.com/OpsOrch/opsorch-prometheus-adapter/releases/download/v0.1
 ADD https://github.com/OpsOrch/opsorch-elastic-adapter/releases/download/v0.1.0/logplugin-linux-amd64 ./plugins/logplugin
 
 # Incidents
-ADD https://github.com/OpsOrch/opsorch-pagerduty-adapter/releases/download/v0.1.5/incidentplugin-linux-amd64 ./plugins/incidentplugin
+ADD https://github.com/OpsOrch/opsorch-pagerduty-adapter/releases/download/v0.1.0/incidentplugin-linux-amd64 ./plugins/incidentplugin
 
 RUN chmod +x ./plugins/*
 
@@ -488,7 +488,7 @@ ADD https://github.com/OpsOrch/opsorch-datadog-adapter/releases/download/v0.1.0/
 ADD https://github.com/OpsOrch/opsorch-datadog-adapter/releases/download/v0.1.0/incidentplugin-linux-amd64 ./plugins/incidentplugin
 
 # PagerDuty for on-call
-ADD https://github.com/OpsOrch/opsorch-pagerduty-adapter/releases/download/v0.1.5/serviceplugin-linux-amd64 ./plugins/serviceplugin
+ADD https://github.com/OpsOrch/opsorch-pagerduty-adapter/releases/download/v0.1.0/serviceplugin-linux-amd64 ./plugins/serviceplugin
 
 RUN chmod +x ./plugins/*
 
