@@ -1,6 +1,6 @@
 # OpsOrch
 
-OpsOrch is an open, modular operations orchestrator that keeps your operational data and execution in the tools you already use, while providing a single control plane to investigate, coordinate, and act. If observability tells you what happened, OpsOrch helps you answer: what do we do next?
+OpsOrch is an open, modular operations orchestrator that keeps your operational data and execution in the tools you already use, while providing a single control plane to investigate, coordinate, and act. If observability tells you what happened, OpsOrch helps you answer: what do we do next? OpsOrch is not a replacement for your observability stack or automation systems. It complements them with unified navigation, deep links, and an inspectable Copilot experience that points to exactly where the evidence lives.
 
 ## Platform at a Glance
 
