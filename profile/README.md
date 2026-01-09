@@ -1,6 +1,6 @@
 # OpsOrch
 
-OpsOrch is an open, modular incident-operations platform that keeps operational data (incidents, logs, metrics, tickets, messaging, services, secrets) in the systems you already run and orchestrates them through a single API + AI workflow. Every repo in this org focuses on one layer of that stack so you can import just the pieces you need.
+OpsOrch is an open, modular operations orchestrator that keeps your operational data and execution in the tools you already use, while providing a single control plane to investigate, coordinate, and act. If observability tells you what happened, OpsOrch helps you answer: what do we do next?
 
 ## Platform at a Glance
 
