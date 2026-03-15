@@ -126,14 +126,14 @@ curl -O https://raw.githubusercontent.com/OpsOrch/.github/main/profile/docker-co
 DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose up -d
 
 open http://localhost:3000     # Console
-curl http://localhost:8080/health
+curl http://localhost:8080/health -H 'Authorization: Bearer demo'
 curl http://localhost:7070/mcp \
   -H 'Content-Type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
 Variants:
-- `docker-compose.dev.yml` – mounts local source for live dev against the containers
+- `docker-compose.dev.yml` – image-based local dev stack with debug logging and Copilot enabled
 - `docker-compose.prod.yml` – opinionated production wiring (TLS, secrets, logging)
 
 ### Manual Dev Workflow
@@ -173,7 +173,7 @@ Variants:
    > Set `NEXT_PUBLIC_COPILOT_URL` to point at a Copilot deployment when you want chat enabled in Console.
 
 Health checks:
-- `curl http://localhost:8080/health` (Core)
+- `curl http://localhost:8080/health -H 'Authorization: Bearer demo'` (Core)
 - `curl http://localhost:7070/mcp -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'` (MCP)
 - `curl http://localhost:6060/health` (Copilot)
 - Visit `/settings` in the Console to verify endpoints.

@@ -14,15 +14,13 @@
 #   - MCP Server: http://localhost:7070/mcp
 #
 # Health checks:
-#   curl http://localhost:8080/health
+#   curl http://localhost:8080/health -H 'Authorization: Bearer demo'
 #   curl http://localhost:7070/mcp -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
-
-version: '3.8'
 
 services:
   # OpsOrch Mock Adapters (includes Core + all mock providers with demo data)
   opsorch-mock-adapters:
-    image: ghcr.io/opsorch/opsorch-mock-adapters:latest
+    image: ghcr.io/opsorch/opsorch-mock-adapters:0.5.0
     container_name: opsorch-mock-adapters
     ports:
       - "8080:8080"
@@ -42,7 +40,7 @@ services:
 
   # OpsOrch MCP Server (AI Tools Layer)
   opsorch-mcp:
-    image: ghcr.io/opsorch/opsorch-mcp:latest
+    image: ghcr.io/opsorch/opsorch-mcp:v0.5.0
     container_name: opsorch-mcp
     ports:
       - "7070:7070"
@@ -62,7 +60,13 @@ services:
     depends_on:
       - opsorch-mock-adapters
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7070/mcp", "-H", "Content-Type: application/json", "-H", "Accept: application/json, text/event-stream", "-d", "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "const http=require('http');const body=JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list'});const req=http.request({hostname:'localhost',port:7070,path:'/mcp',method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json, text/event-stream','Content-Length':Buffer.byteLength(body)}},res=>process.exit(res.statusCode&&res.statusCode<400?0:1));req.on('error',()=>process.exit(1));req.write(body);req.end();",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -73,17 +77,18 @@ services:
 
   # OpsOrch Console (Web UI)
   opsorch-console:
-    image: ghcr.io/opsorch/opsorch-console:latest
+    image: ghcr.io/opsorch/opsorch-console:v0.6.0
     container_name: opsorch-console
     ports:
       - "3000:3000"
     environment:
       # Server-side API URL (used by Next.js API proxy routes)
       - OPSORCH_API_BASE_URL=http://opsorch-mock-adapters:8080
+      - OPSORCH_API_TOKEN=demo
+      - OPSORCH_COPILOT_BASE_URL=http://opsorch-copilot:6060
       
       # Client-side API URL (used by browser)
       - NEXT_PUBLIC_OPSORCH_CORE_URL=http://localhost:8080
-      
       - NEXT_PUBLIC_COPILOT_URL=http://localhost:6060
       
       # Optional: Configure Copilot LLM Provider
@@ -92,12 +97,47 @@ services:
       # - GEMINI_MODEL=gemini-3-flash-preview  # optional, latest model
     depends_on:
       - opsorch-mock-adapters
+      - opsorch-copilot
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000',res=>process.exit(res.statusCode&&res.statusCode<400?0:1)).on('error',()=>process.exit(1));",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 20s
+    restart: unless-stopped
+    networks:
+      - opsorch
+
+  # OpsOrch Copilot
+  opsorch-copilot:
+    image: ghcr.io/opsorch/opsorch-copilot:v0.2.0
+    container_name: opsorch-copilot
+    ports:
+      - "6060:6060"
+    environment:
+      - PORT=6060
+      - MCP_URL=http://opsorch-mcp:7070/mcp
+      - LLM_PROVIDER=mock
+    depends_on:
+      - opsorch-mcp
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:6060/health',res=>process.exit(res.statusCode&&res.statusCode<400?0:1)).on('error',()=>process.exit(1));",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 25s
     restart: unless-stopped
     networks:
       - opsorch

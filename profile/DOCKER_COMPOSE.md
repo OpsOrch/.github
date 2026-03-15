@@ -15,7 +15,7 @@ docker compose up -d
 
 # Access the services
 open http://localhost:3000  # Console UI
-curl http://localhost:8080/health  # Core API health check
+curl http://localhost:8080/health -H 'Authorization: Bearer demo'  # Core API health check
 curl http://localhost:7070/mcp -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'  # MCP tools
 ```
 
@@ -200,7 +200,7 @@ docker compose logs opsorch-mcp
 docker compose logs opsorch-console
 
 # Manual health checks
-curl http://localhost:8080/health
+curl http://localhost:8080/health -H 'Authorization: Bearer demo'
 curl http://localhost:7070/mcp -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 curl http://localhost:3000
 ```
@@ -232,10 +232,10 @@ docker network inspect opsorch-network
 **Console can't reach Core:**
 ```bash
 # Verify Mock Adapters service is healthy
-curl http://localhost:8080/health
+curl http://localhost:8080/health -H 'Authorization: Bearer demo'
 
-# Check network configuration in docker-compose.yml
-# Ensure NEXT_PUBLIC_OPSORCH_CORE_URL is correct
+# Check console proxy configuration in docker-compose.yml
+# Ensure OPSORCH_API_BASE_URL and OPSORCH_API_TOKEN are correct
 ```
 
 **MCP tools not working:**
@@ -246,7 +246,7 @@ curl http://localhost:7070/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 
 # Check Core connectivity from MCP container
-docker exec opsorch-mcp curl http://opsorch-mock-adapters:8080/health
+docker exec opsorch-mcp wget -qO- --header='Authorization: Bearer demo' http://opsorch-mock-adapters:8080/health
 ```
 
 **Provider authentication errors:**
