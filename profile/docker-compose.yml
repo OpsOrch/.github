@@ -2,7 +2,7 @@
 # This Docker Compose file sets up a complete OpsOrch environment with:
 # - OpsOrch Mock Adapters (includes Core + all mock providers with demo data)
 # - OpsOrch MCP server (AI tools layer)
-# - OpsOrch Console OSS (web UI)
+# - OpsOrch Console (web UI)
 #
 # Usage:
 #   curl -O https://raw.githubusercontent.com/OpsOrch/.github/main/profile/docker-compose.yml
@@ -71,9 +71,9 @@ services:
     networks:
       - opsorch
 
-  # OpsOrch Console OSS (Web UI)
+  # OpsOrch Console (Web UI)
   opsorch-console:
-    image: ghcr.io/opsorch/opsorch-console:latest-oss
+    image: ghcr.io/opsorch/opsorch-console:latest
     container_name: opsorch-console
     ports:
       - "3000:3000"
@@ -84,11 +84,7 @@ services:
       # Client-side API URL (used by browser)
       - NEXT_PUBLIC_OPSORCH_CORE_URL=http://localhost:8080
       
-      # Edition configuration
-      - NEXT_PUBLIC_OPSORCH_EDITION=oss
-      
-      # Optional: Connect to Copilot (if available)
-      # - NEXT_PUBLIC_COPILOT_URL=http://localhost:6060
+      - NEXT_PUBLIC_COPILOT_URL=http://localhost:6060
       
       # Optional: Configure Copilot LLM Provider
       # - LLM_PROVIDER=gemini  # or "openai", "anthropic"

@@ -9,9 +9,9 @@ OpsOrch is an open, modular operations orchestrator that keeps your operational 
 | --- | --- | --- |
 | [`opsorch-core`](https://github.com/OpsOrch/opsorch-core) | Stateless Go orchestration service | REST APIs for every capability, registry + schema boundaries, secret backends, JSON-RPC plugin loader |
 | [`opsorch-mcp`](https://github.com/OpsOrch/opsorch-mcp) | MCP server that wraps Core as typed tools/resources | HTTP + stdio transports, resources for docs, auth via bearer tokens, built with TypeScript |
-| _`opsorch-copilot` (private)_ | AI runtime that plans + executes MCP tool calls | Capability-aware handler registry, multi-step planning, OpenAI/Mock backends, HTTP chat API |
-| [`opsorch-console`](https://github.com/OpsOrch/opsorch-console) | Open-source Next.js operator UI | Incidents/logs/metrics/tickets/services views, alert surface, Copilot chat, OSS + Enterprise editions |
-| _`opsorch-com` (private)_ | Marketing/docs site | Next.js 14 app powering opsorch.com with docs + launch content |
+| [`opsorch-copilot`](https://github.com/OpsOrch/opsorch-copilot) | AI runtime that plans + executes MCP tool calls | Capability-aware handler registry, multi-step planning, OpenAI/Mock backends, HTTP chat API |
+| [`opsorch-console`](https://github.com/OpsOrch/opsorch-console) | Open-source Next.js operator UI | Incidents/logs/metrics/tickets/services views, alert surface, Copilot chat |
+| [`opsorch-com`](https://github.com/OpsOrch/opsorch-com) | Marketing/docs site | Next.js 14 app powering opsorch.com with docs + launch content |
 
 ### Adapter + Integration Repos
 | Repo | Capabilities | Notes |
@@ -63,8 +63,8 @@ graph TB
         Mock[Mock Data]
     end
     
-    Console -.Enterprise optional.-> Copilot
-    Console -->|HTTP all editions| Core
+    Console -->|HTTP| Copilot
+    Console -->|HTTP| Core
     Copilot -->|MCP Protocol| MCP
     MCP -->|HTTP REST| Core
     Core -->|Registry lookup| InProc
@@ -85,7 +85,7 @@ graph TB
 - **Config-driven routing:** `OPSORCH_<CAP>_PROVIDER`, `OPSORCH_<CAP>_PLUGIN`, and `OPSORCH_<CAP>_CONFIG` select providers per capability
 - **No operational data storage:** Core keeps encrypted configs + optional audit logs; data stays in source tools
 - **Security-first:** pluggable secret backends (Vault/KMS/local AES-GCM), env-scoped queries, audit hooks
-- **AI-native:** MCP provides typed tools; Copilot plans tool calls, tracks evidence, and surfaces deep links back to Console. OSS Console connects only to Core; Enterprise wiring adds optional Copilot chat.
+- **AI-native:** MCP provides typed tools; Copilot plans tool calls, tracks evidence, and surfaces deep links back to Console.
 
 ### Provider Configuration Model
 `opsorch-core` reads provider settings with
@@ -167,10 +167,10 @@ Variants:
    cd ../opsorch-console
    npm install
    NEXT_PUBLIC_OPSORCH_CORE_URL=http://localhost:8080 \
-   npm run dev:oss
+   NEXT_PUBLIC_COPILOT_URL=http://localhost:6060 npm run dev
    ```
    Open [http://localhost:3000](http://localhost:3000) and confirm the Incident, Logs, Metrics, Services, Tickets, and Chat tabs load.
-   > Enterprise-only Copilot features require `NEXT_PUBLIC_COPILOT_URL` pointing at a Copilot deployment; the OSS edition talks directly to Core only.
+   > Set `NEXT_PUBLIC_COPILOT_URL` to point at a Copilot deployment when you want chat enabled in Console.
 
 Health checks:
 - `curl http://localhost:8080/health` (Core)

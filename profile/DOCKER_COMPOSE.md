@@ -22,7 +22,7 @@ curl http://localhost:7070/mcp -H 'Content-Type: application/json' -d '{"jsonrpc
 This starts:
 - **OpsOrch Mock Adapters** (includes Core + all mock providers with demo data) on port 8080
 - **OpsOrch MCP Server** (AI tools layer) on port 7070  
-- **OpsOrch Console OSS** (web UI) on port 3000 — the OSS console talks directly to Core; Copilot is optional and only needed for Enterprise chat features.
+- **OpsOrch Console** (web UI) on port 3000
 
 ## Available Configurations
 
@@ -30,7 +30,7 @@ This starts:
 **Best for:** First-time users, demos, evaluation
 
 - Uses mock adapters with realistic demo data
-- Single OSS console instance
+- Single console instance
 - Minimal configuration required
 - Perfect for understanding OpsOrch capabilities
 
@@ -40,11 +40,10 @@ docker compose up -d
 ```
 
 ### 2. `docker-compose.dev.yml` - Development
-**Best for:** Developers, testing both editions, local development
+**Best for:** Developers and local development
 
 - Mock adapters with debug logging
-- Both OSS and Enterprise console editions
-- Placeholder for Copilot integration
+- Console plus optional Copilot integration
 - Development-friendly configuration
 
 ```bash
@@ -53,13 +52,10 @@ docker compose -f docker-compose.dev.yml up -d
 ```
 
 Access:
-- Console OSS: http://localhost:3000
-- Console Enterprise: http://localhost:3001
+- Console: http://localhost:3000
 - Core API: http://localhost:8080
 - MCP Server: http://localhost:7070
-- Copilot API: http://localhost:6060 (only if you enable the private Copilot image)
-
-> The Enterprise console block has `NEXT_PUBLIC_COPILOT_URL` commented out. Uncomment (and enable the `opsorch-copilot` service) once you have access to the private Copilot repo; otherwise enterprise chat features remain disabled while the rest of the UI continues to talk directly to Core.
+- Copilot API: http://localhost:6060
 
 ### 3. `docker-compose.prod.yml` - Production Template
 **Best for:** Production deployments with real providers
@@ -138,7 +134,7 @@ OPSORCH_SERVICE_CONFIG={"apiToken":"your-pd-token","apiURL":"https://api.pagerdu
 # Console Configuration
 CORE_URL=http://localhost:8080
 CONSOLE_URL=http://localhost:3000
-# COPILOT_URL=http://localhost:6060  # Enterprise only, when Copilot is deployed
+# COPILOT_URL=http://localhost:6060
 ```
 
 ### Step 3: Update docker-compose.prod.yml

@@ -110,17 +110,15 @@ services:
     networks:
       - opsorch-prod
 
-  # OpsOrch Console (OSS Edition)
+  # OpsOrch Console
   opsorch-console:
-    image: ghcr.io/opsorch/opsorch-console:latest-oss
+    image: ghcr.io/opsorch/opsorch-console:latest
     container_name: opsorch-console-prod
     ports:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_OPSORCH_CORE_URL=${CORE_URL:-http://localhost:8080}
-      - NEXT_PUBLIC_OPSORCH_EDITION=oss
-      # Optional: Add Copilot URL when available
-      # - NEXT_PUBLIC_COPILOT_URL=${COPILOT_URL:-http://localhost:6060}
+      - NEXT_PUBLIC_COPILOT_URL=${COPILOT_URL:-http://localhost:6060}
     depends_on:
       opsorch-core:
         condition: service_healthy
@@ -164,3 +162,4 @@ networks:
 # CORE_URL=http://localhost:8080
 # CONSOLE_URL=http://localhost:3000
 # CONSOLE_HOST=localhost
+# COPILOT_URL=http://localhost:6060
